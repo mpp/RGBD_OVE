@@ -40,6 +40,10 @@
 #include <pcl/registration/transforms.h>
 
 #include <mutex>
+#include <unistd.h>
+
+#include "visualizerthread.h"
+#include "cloudsgrabber.h"
 
 #define MIN_X -0.30f
 #define MAX_X 0.30f
@@ -160,272 +164,156 @@ void pairAlign (const pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud_src,
     final_transform = targetToSource;
 }
 
-class SimpleOpenNIViewer
+void elaborateCloud(const pcl::PointCloud<pcl::PointXYZ>::Ptr &src, pcl::PointCloud<pcl::PointXYZ>::Ptr &dst)
 {
-public:
-    SimpleOpenNIViewer () : viewer_ ("PCL OpenNI Viewer")
+    if (src->points.size() <= 1)
     {
-        cloud_0_ = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
-        cloud_0_->points.clear();
-        cloud_0_->points.push_back(pcl::PointXYZ(0,0,0));
-        cloud_0_->width = 1;
-        cloud_0_->height = 1;
-
-        cloud_1_ = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
-        cloud_1_->points.clear();
-        cloud_1_->points.push_back(pcl::PointXYZ(0,0,0));
-        cloud_1_->width = 1;
-        cloud_1_->height = 1;
-
-        cloud_complete_ = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
-        cloud_complete_->points.clear();
-        cloud_complete_->points.push_back(pcl::PointXYZ(0,0,0));
-        cloud_complete_->width = 1;
-        cloud_complete_->height = 1;
-
-        viewer_.createViewPort (0.0, 0.0, 0.5, 0.5, v_0_);
-        viewer_.setBackgroundColor (0.2, 0.2, 0.2, v_0_);
-        viewer_.addText ("Camera #0", 10, 10, "v0 text", v_0_);
-        viewer_.addPointCloud<pcl::PointXYZ> (cloud_0_, "object0", v_0_);
-        viewer_.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "object0", v_0_);
-        viewer_.addCoordinateSystem (1.0, v_0_);
-
-        viewer_.createViewPort (0.5, 0.0, 1.0, 0.5, v_1_);
-        viewer_.setBackgroundColor (0.2, 0.2, 0.2, v_1_);
-        viewer_.addText ("Camera #1", 10, 10, "v1 text", v_1_);
-        viewer_.addPointCloud<pcl::PointXYZ> (cloud_1_, "object1", v_1_);
-        viewer_.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "object1", v_1_);
-        viewer_.addCoordinateSystem (1.0, v_1_);
-
-        viewer_.createViewPort (0.0, 0.5, 1.0, 1.0, v_complete_);
-        viewer_.setBackgroundColor (0.2, 0.2, 0.2, v_complete_);
-        viewer_.addText ("Complete object", 10, 10, "vcomplete text", v_complete_);
-        viewer_.addPointCloud<pcl::PointXYZ> (cloud_complete_, "complete", v_complete_);
-        viewer_.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "complete", v_complete_);
-        viewer_.addCoordinateSystem (1.0, v_complete_);
-
-//        std::cout << v_0_ << " - " << v_1_ << std::endl;
-
-        viewer_.setBackgroundColor (0.2, 0.2, 0.2);
-//        viewer_.addPointCloud<pcl::PointXYZ> (cloud_, "object");
-//        viewer_.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "object");
-        viewer_.initCameraParameters ();
-
-        viewer_.setCameraPosition(0.3, 0.2, -0.1, 0.0, -1.0, 0.0);
+        dst = src;
+        return;
     }
+    //PCL_INFO("1 - Scene filter (MAX-MIN)");
+    /// 1 - Scene filter (MAX-MIN)
+    pcl::PointCloud<pcl::PointXYZ>::Ptr
+            filteredCloud_xyz (new pcl::PointCloud<pcl::PointXYZ>);
+    passTroughFilterXYZ(src, filteredCloud_xyz);
 
-    void cloud_cb_0_ (const pcl::PointCloud<pcl::PointXYZ>::ConstPtr &cloud)
+    //PCL_INFO("2 - Statistical Outliers Removal");
+    /// 2 - Statistical Outliers Removal
+    pcl::PointCloud<pcl::PointXYZ>::Ptr noOutliersCloud (new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::StatisticalOutlierRemoval<pcl::PointXYZ> sor;
+    sor.setInputCloud (filteredCloud_xyz);
+    sor.setMeanK (25);
+    sor.setStddevMulThresh (1.5);
+    sor.filter (*noOutliersCloud);
+
+    //PCL_INFO("4 - Segmentation");
+    /// 4 - Segmentation
+    pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
+    pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
+    // Create the segmentation object
+    pcl::SACSegmentation<pcl::PointXYZ> seg;
+    // Optional
+    seg.setOptimizeCoefficients (true);
+    // Mandatory
+    seg.setModelType (pcl::SACMODEL_PLANE);
+    seg.setMethodType (pcl::SAC_RANSAC);
+    seg.setDistanceThreshold (0.01);
+
+    seg.setInputCloud (noOutliersCloud);
+    seg.segment (*inliers, *coefficients);
+
+    // The vector seems already sort, just in case...
+    std::sort(inliers->indices.begin(), inliers->indices.end());
+
+    pcl::PointCloud<pcl::PointXYZ>::Ptr segmentedCloud (new pcl::PointCloud<pcl::PointXYZ>);
+    int currentInlier = 0;
+    for (int i = 0; i < noOutliersCloud->points.size(); i++)
     {
-        mtx.lock();
-        std::cout << "lock0" << std::endl;
-        if (interface_1_->isRunning())
-            interface_1_->stop();
-        if (!interface_0_->isRunning())
-            interface_0_->start();
-        cloud_cb_(cloud, 0);
-        interface_0_->stop();
-        interface_1_->start();
-        mtx.unlock();
-        std::cout << "unlock0" << std::endl;
-    }
-
-    void cloud_cb_1_ (const pcl::PointCloud<pcl::PointXYZ>::ConstPtr &cloud)
-    {
-        mtx.lock();
-        std::cout << "lock1" << std::endl;
-        if (interface_0_->isRunning())
-            interface_0_->stop();
-        if (!interface_1_->isRunning())
-            interface_1_->start();
-        cloud_cb_(cloud, 1);
-        interface_1_->stop();
-        interface_0_->start();
-        mtx.unlock();
-        std::cout << "unlock1" << std::endl;
-    }
-
-    void cloud_cb_ (const pcl::PointCloud<pcl::PointXYZ>::ConstPtr &cloud, const int cameraID)
-    {
-        //PCL_INFO("1 - Scene filter (MAX-MIN)");
-        /// 1 - Scene filter (MAX-MIN)
-        pcl::PointCloud<pcl::PointXYZ>::Ptr
-                filteredCloud_xyz (new pcl::PointCloud<pcl::PointXYZ>);
-        passTroughFilterXYZ(cloud, filteredCloud_xyz);
-
-        //PCL_INFO("2 - Statistical Outliers Removal");
-        /// 2 - Statistical Outliers Removal
-        pcl::PointCloud<pcl::PointXYZ>::Ptr noOutliersCloud (new pcl::PointCloud<pcl::PointXYZ>);
-        pcl::StatisticalOutlierRemoval<pcl::PointXYZ> sor;
-        sor.setInputCloud (filteredCloud_xyz);
-        sor.setMeanK (25);
-        sor.setStddevMulThresh (1.5);
-        sor.filter (*noOutliersCloud);
-
-        //PCL_INFO("4 - Segmentation");
-        /// 4 - Segmentation
-        pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
-        pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
-        // Create the segmentation object
-        pcl::SACSegmentation<pcl::PointXYZ> seg;
-        // Optional
-        seg.setOptimizeCoefficients (true);
-        // Mandatory
-        seg.setModelType (pcl::SACMODEL_PLANE);
-        seg.setMethodType (pcl::SAC_RANSAC);
-        seg.setDistanceThreshold (0.01);
-
-        seg.setInputCloud (noOutliersCloud);
-        seg.segment (*inliers, *coefficients);
-
-        // The vector seems already sort, just in case...
-        std::sort(inliers->indices.begin(), inliers->indices.end());
-
-        pcl::PointCloud<pcl::PointXYZ>::Ptr segmentedCloud (new pcl::PointCloud<pcl::PointXYZ>);
-        int currentInlier = 0;
-        for (int i = 0; i < noOutliersCloud->points.size(); i++)
+        if (inliers->indices[currentInlier] != i)
         {
-            if (inliers->indices[currentInlier] != i)
-            {
-                segmentedCloud->points.push_back(noOutliersCloud->points[i]);
-            }
-            else
-            {
-                currentInlier = currentInlier + 1;
-            }
-        }
-        segmentedCloud->width = (int) segmentedCloud->points.size();
-        segmentedCloud->height = 1;
-
-        //PCL_INFO("5 - Outliers Removal");
-        /// 5 - Outliers Removal
-        pcl::PointCloud<pcl::PointXYZ>::Ptr finalCloud(new pcl::PointCloud<pcl::PointXYZ>);
-        sor.setInputCloud (segmentedCloud);
-        sor.setMeanK (25);
-        sor.setStddevMulThresh (1.5);
-        sor.filter (*finalCloud);
-        finalCloud->width = (int) finalCloud->points.size();
-        finalCloud->height = 1;
-
-        int viewport = 0;
-        if (cameraID == 0)
-        {
-            pcl::copyPointCloud<pcl::PointXYZ, pcl::PointXYZ>(*finalCloud, *cloud_0_);
-
-            finalCloud = cloud_0_;
-            std::cout << "#0 - " << cameraID << std::endl;
-            viewport = v_0_;
+            segmentedCloud->points.push_back(noOutliersCloud->points[i]);
         }
         else
         {
-            pcl::copyPointCloud<pcl::PointXYZ, pcl::PointXYZ>(*finalCloud, *cloud_1_);
-
-            finalCloud = cloud_1_;
-            std::cout << "#1 - " << cameraID << std::endl;
-            viewport = v_1_;
-        }
-
-
-        if (cloud_0_->points.size() > 1 && cloud_1_->points.size() > 1)
-        {
-            pcl::PointCloud<pcl::PointXYZ>::Ptr
-                    registered (new pcl::PointCloud<pcl::PointXYZ>);
-            //PCL_INFO("3 - registration");
-            /// 3 - registration...
-            Eigen::Matrix4f GlobalTransform;
-            pairAlign(cloud_0_, cloud_1_, registered, GlobalTransform);
-
-
-            //PCL_INFO("6 - Bounding-Box computation");
-            /// 6 - Bounding-Box computation
-            // compute principal direction
-            Eigen::Vector4f centroid;
-            pcl::compute3DCentroid(*registered, centroid);
-            Eigen::Matrix3f covariance;
-            pcl::computeCovarianceMatrixNormalized(*registered, centroid, covariance);
-            Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigen_solver(covariance, Eigen::ComputeEigenvectors);
-            Eigen::Matrix3f eigDx = eigen_solver.eigenvectors();
-            eigDx.col(2) = eigDx.col(0).cross(eigDx.col(1));
-
-            // move the points to that reference frame
-            Eigen::Matrix4f p2w(Eigen::Matrix4f::Identity());
-            p2w.block<3,3>(0,0) = eigDx.transpose();
-            p2w.block<3,1>(0,3) = -1.f * (p2w.block<3,3>(0,0) * centroid.head<3>());
-            pcl::PointCloud<pcl::PointXYZ> cPoints;
-            pcl::transformPointCloud(*registered, cPoints, p2w);
-
-            pcl::PointXYZ min_pt, max_pt;
-            pcl::getMinMax3D(cPoints, min_pt, max_pt);
-            const Eigen::Vector3f mean_diag = 0.5f*(max_pt.getVector3fMap() + min_pt.getVector3fMap());
-
-            // final transform
-            const Eigen::Quaternionf qfinal(eigDx);
-            const Eigen::Vector3f tfinal = eigDx*mean_diag + centroid.head<3>();
-
-            if (!viewer_.wasStopped())
-            {
-                viewer_.updatePointCloud(registered, "complete");
-                viewer_.removeAllShapes(v_complete_);
-                viewer_.addText ("Camera complete", 10, 10, "v complete text", v_complete_);
-                viewer_.addCube(tfinal, qfinal, max_pt.x - min_pt.x, max_pt.y - min_pt.y, max_pt.z - min_pt.z, std::to_string(cameraID), v_complete_);
-                viewer_.spinOnce(35, true);
-
-                std::cout << "(x, y, z) = (" << max_pt.x - min_pt.x << ", " << max_pt.y - min_pt.y << ", " << max_pt.z - min_pt.z << ")" << std::endl;
-            }
-        }
-
-        if (!viewer_.wasStopped())
-        {
-            viewer_.updatePointCloud(finalCloud, "object"+std::to_string(cameraID));
-            viewer_.removeAllShapes(viewport);
-            viewer_.addText ("Camera #"+std::to_string(cameraID), 10, 10, "v"+std::to_string(cameraID)+" text", viewport);
-            viewer_.spinOnce(35, true);
+            currentInlier = currentInlier + 1;
         }
     }
+    segmentedCloud->width = (int) segmentedCloud->points.size();
+    segmentedCloud->height = 1;
 
-    void run ()
-    {
-        interface_0_ = new pcl::OpenNIGrabber("#1");
-        interface_1_ = new pcl::OpenNIGrabber("#2");
+    //PCL_INFO("5 - Outliers Removal");
+    /// 5 - Outliers Removal
+    dst = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
+    sor.setInputCloud (segmentedCloud);
+    sor.setMeanK (25);
+    sor.setStddevMulThresh (1.5);
+    sor.filter (*dst);
+    dst->width = (int) dst->points.size();
+    dst->height = 1;
+}
 
-        boost::function<void (const pcl::PointCloud<pcl::PointXYZ>::ConstPtr&)> f0 =
-                boost::bind (&SimpleOpenNIViewer::cloud_cb_0_, this, _1);
-        boost::function<void (const pcl::PointCloud<pcl::PointXYZ>::ConstPtr&)> f1 =
-                boost::bind (&SimpleOpenNIViewer::cloud_cb_1_, this, _1);
+void computeBB(const pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud, BoundingBox &bb)
+{
+    //PCL_INFO("6 - Bounding-Box computation");
+    /// 6 - Bounding-Box computation
+    // compute principal direction
+    Eigen::Vector4f centroid;
+    pcl::compute3DCentroid(*cloud, centroid);
+    Eigen::Matrix3f covariance;
+    pcl::computeCovarianceMatrixNormalized(*cloud, centroid, covariance);
+    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigen_solver(covariance, Eigen::ComputeEigenvectors);
+    Eigen::Matrix3f eigDx = eigen_solver.eigenvectors();
+    eigDx.col(2) = eigDx.col(0).cross(eigDx.col(1));
 
-        interface_0_->registerCallback (f0);
-        interface_1_->registerCallback (f1);
+    // move the points to that reference frame
+    Eigen::Matrix4f p2w(Eigen::Matrix4f::Identity());
+    p2w.block<3,3>(0,0) = eigDx.transpose();
+    p2w.block<3,1>(0,3) = -1.f * (p2w.block<3,3>(0,0) * centroid.head<3>());
+    pcl::PointCloud<pcl::PointXYZ> cPoints;
+    pcl::transformPointCloud(*cloud, cPoints, p2w);
 
-        interface_0_->start ();
-        interface_1_->start ();
+    pcl::PointXYZ min_pt, max_pt;
+    pcl::getMinMax3D(cPoints, min_pt, max_pt);
+    const Eigen::Vector3f mean_diag = 0.5f*(max_pt.getVector3fMap() + min_pt.getVector3fMap());
 
-        while (!viewer_.wasStopped())
-        {
-            boost::this_thread::sleep (boost::posix_time::seconds (0.5));
-        }
+    // final transform
+    const Eigen::Quaternionf qfinal(eigDx);
+    const Eigen::Vector3f tfinal = eigDx*mean_diag + centroid.head<3>();
 
-        interface_0_->stop ();
-        interface_1_->stop ();
-    }
+    bb.max_pt = max_pt;
+    bb.min_pt = min_pt;
+    bb.qfinal = qfinal;
+    bb.tfinal = tfinal;
+}
 
-    pcl::visualization::PCLVisualizer
-        viewer_;
-    int
-        v_0_,
-        v_1_,
-        v_complete_;
-    pcl::Grabber
-        * interface_0_,
-        * interface_1_;
-    pcl::PointCloud<pcl::PointXYZ>::Ptr
-        cloud_0_,
-        cloud_1_,
-        cloud_complete_;
-
-    std::mutex mtx;
-};
 
 int main ()
 {
-    SimpleOpenNIViewer v;
-    v.run ();
+    //Start visualizer thread
+    VisualizerThread visualizer;
+    boost::thread * visualizerThread = new boost::thread(visualizer);
+
+    CloudsGrabber cg;
+    boost::thread grabberThread(cg);
+
+    while (!visualizer.wasStopped())
+    {
+        pcl::PointCloud<pcl::PointXYZ>::Ptr c0 = cg.getCloud0();
+        pcl::PointCloud<pcl::PointXYZ>::Ptr c1 = cg.getCloud1();
+        pcl::PointCloud<pcl::PointXYZ>::Ptr e0, e1;
+
+        //std::cout << "wtf??" << c0->points.size() << " - " << c1->points.size() << std::endl;
+
+        elaborateCloud(c0, e0);
+        elaborateCloud(c1, e1);
+
+        visualizer.updateCloud(e0, VisualizerThread::VIEWPORT::OBJ0);
+        visualizer.updateCloud(e1, VisualizerThread::VIEWPORT::OBJ1);
+
+        pcl::PointCloud<pcl::PointXYZ>::Ptr
+                registered (new pcl::PointCloud<pcl::PointXYZ>);
+        if (e0->points.size() > 1 && e1->points.size() > 1)
+        {
+            //PCL_INFO("3 - registration");
+            /// 3 - registration...
+            Eigen::Matrix4f GlobalTransform;
+            pairAlign(e0, e1, registered, GlobalTransform);
+        }
+        visualizer.updateCloud(registered, VisualizerThread::VIEWPORT::COMPLETE);
+
+        BoundingBox bb;
+        computeBB(registered, bb);
+        std::cout << bb.max_pt.x << std::endl;
+
+        visualizer.updateBB(bb);
+
+        usleep(500000);
+        //boost::this_thread::sleep (boost::posix_time::seconds (0.5));
+    }
+    cg.stopGrabber();
+    std::cout << "exiting..." << std::endl;
+    grabberThread.join();
+    visualizerThread->join();
+    return 0;
+
 }

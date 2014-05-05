@@ -17,6 +17,9 @@ add_definitions(${PCL_DEFINITIONS})
 add_executable(
     ${PROJECT_NAME}
     src/io_test.cpp
+    src/visualizerthread.cpp
+    src/cloudsgrabber.cpp
+    src/workerthread.cpp
 )
 
 target_link_libraries(
