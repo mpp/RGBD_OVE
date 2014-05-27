@@ -298,7 +298,7 @@ void elaborateCloud(const pcl::PointCloud<pcl::PointXYZ>::Ptr &src, pcl::PointCl
     pcl::StatisticalOutlierRemoval<pcl::PointXYZ> sor;
     sor.setInputCloud (filteredCloud_xyz);
     sor.setMeanK (25);
-    sor.setStddevMulThresh (4.5);
+    sor.setStddevMulThresh (1.5);
     sor.filter (*noOutliersCloud);
 
     //PCL_INFO("4 - Segmentation");
@@ -320,31 +320,31 @@ void elaborateCloud(const pcl::PointCloud<pcl::PointXYZ>::Ptr &src, pcl::PointCl
     // The vector seems already sort, just in case...
     std::sort(inliers->indices.begin(), inliers->indices.end());
 
-    //pcl::PointCloud<pcl::PointXYZ>::Ptr segmentedCloud (new pcl::PointCloud<pcl::PointXYZ>);
-    dst = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr segmentedCloud (new pcl::PointCloud<pcl::PointXYZ>);
+//    dst = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
     int currentInlier = 0;
     for (int i = 0; i < noOutliersCloud->points.size(); i++)
     {
         if (inliers->indices[currentInlier] != i)
         {
-//            segmentedCloud->points.push_back(noOutliersCloud->points[i]);
-            dst->points.push_back(noOutliersCloud->points[i]);
+            segmentedCloud->points.push_back(noOutliersCloud->points[i]);
+//            dst->points.push_back(noOutliersCloud->points[i]);
         }
         else
         {
             currentInlier = currentInlier + 1;
         }
     }
-//    segmentedCloud->width = (int) segmentedCloud->points.size();
-//    segmentedCloud->height = 1;
+    segmentedCloud->width = (int) segmentedCloud->points.size();
+    segmentedCloud->height = 1;
 
-//    //PCL_INFO("5 - Outliers Removal");
-//    /// 5 - Outliers Removal
-//    dst = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
-//    sor.setInputCloud (segmentedCloud);
-//    sor.setMeanK (25);
-//    sor.setStddevMulThresh (1.5);
-//    sor.filter (*dst);
+    //PCL_INFO("5 - Outliers Removal");
+    /// 5 - Outliers Removal
+    dst = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
+    sor.setInputCloud (segmentedCloud);
+    sor.setMeanK (25);
+    sor.setStddevMulThresh (1.5);
+    sor.filter (*dst);
     dst->width = (int) dst->points.size();
     dst->height = 1;
 }
@@ -386,6 +386,86 @@ void computeBB(const pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud, BoundingBox &bb
 
 int main ()
 {
+
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_0_a (new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_1_a (new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_0_b (new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_1_b (new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_0_c (new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_1_c (new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_0_d (new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_1_d (new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_0_e (new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_1_e (new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_0_f (new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_1_f (new pcl::PointCloud<pcl::PointXYZ>);
+
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_0_a_e (new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_1_a_e (new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_0_b_e (new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_1_b_e (new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_0_c_e (new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_1_c_e (new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_0_d_e (new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_1_d_e (new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_0_e_e (new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_1_e_e (new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_0_f_e (new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_1_f_e (new pcl::PointCloud<pcl::PointXYZ>);
+
+    pcl::io::loadPCDFile<pcl::PointXYZ> ("/home/mpp/PANOTEC/RGBD_ObjectVolumeEstimator/data/cloud_0_a.pcd", *cloud_0_a);
+    pcl::io::loadPCDFile<pcl::PointXYZ> ("/home/mpp/PANOTEC/RGBD_ObjectVolumeEstimator/data/cloud_1_a.pcd", *cloud_1_a);
+    pcl::io::loadPCDFile<pcl::PointXYZ> ("/home/mpp/PANOTEC/RGBD_ObjectVolumeEstimator/data/cloud_0_b.pcd", *cloud_0_b);
+    pcl::io::loadPCDFile<pcl::PointXYZ> ("/home/mpp/PANOTEC/RGBD_ObjectVolumeEstimator/data/cloud_1_b.pcd", *cloud_1_b);
+    pcl::io::loadPCDFile<pcl::PointXYZ> ("/home/mpp/PANOTEC/RGBD_ObjectVolumeEstimator/data/cloud_0_c.pcd", *cloud_0_c);
+    pcl::io::loadPCDFile<pcl::PointXYZ> ("/home/mpp/PANOTEC/RGBD_ObjectVolumeEstimator/data/cloud_1_c.pcd", *cloud_1_c);
+    pcl::io::loadPCDFile<pcl::PointXYZ> ("/home/mpp/PANOTEC/RGBD_ObjectVolumeEstimator/data/cloud_0_d.pcd", *cloud_0_d);
+    pcl::io::loadPCDFile<pcl::PointXYZ> ("/home/mpp/PANOTEC/RGBD_ObjectVolumeEstimator/data/cloud_1_d.pcd", *cloud_1_d);
+    pcl::io::loadPCDFile<pcl::PointXYZ> ("/home/mpp/PANOTEC/RGBD_ObjectVolumeEstimator/data/cloud_0_e.pcd", *cloud_0_e);
+    pcl::io::loadPCDFile<pcl::PointXYZ> ("/home/mpp/PANOTEC/RGBD_ObjectVolumeEstimator/data/cloud_1_e.pcd", *cloud_1_e);
+    pcl::io::loadPCDFile<pcl::PointXYZ> ("/home/mpp/PANOTEC/RGBD_ObjectVolumeEstimator/data/cloud_0_f.pcd", *cloud_0_f);
+    pcl::io::loadPCDFile<pcl::PointXYZ> ("/home/mpp/PANOTEC/RGBD_ObjectVolumeEstimator/data/cloud_1_f.pcd", *cloud_1_f);
+
+    transformCloud0(cloud_0_a);
+    transformCloud1(cloud_1_a);
+    transformCloud0(cloud_0_b);
+    transformCloud1(cloud_1_b);
+    transformCloud0(cloud_0_c);
+    transformCloud1(cloud_1_c);
+    transformCloud0(cloud_0_d);
+    transformCloud1(cloud_1_d);
+    transformCloud0(cloud_0_e);
+    transformCloud1(cloud_1_e);
+    transformCloud0(cloud_0_f);
+    transformCloud1(cloud_1_f);
+
+    elaborateCloud(cloud_0_a, cloud_0_a_e);
+    elaborateCloud(cloud_1_a, cloud_1_a_e);
+    elaborateCloud(cloud_0_b, cloud_0_b_e);
+    elaborateCloud(cloud_1_b, cloud_1_b_e);
+    elaborateCloud(cloud_0_c, cloud_0_c_e);
+    elaborateCloud(cloud_1_c, cloud_1_c_e);
+    elaborateCloud(cloud_0_d, cloud_0_d_e);
+    elaborateCloud(cloud_1_d, cloud_1_d_e);
+    elaborateCloud(cloud_0_e, cloud_0_e_e);
+    elaborateCloud(cloud_1_e, cloud_1_e_e);
+    elaborateCloud(cloud_0_f, cloud_0_f_e);
+    elaborateCloud(cloud_1_f, cloud_1_f_e);
+
+    pcl::io::savePCDFileASCII("/home/mpp/PANOTEC/RGBD_ObjectVolumeEstimator/data/cloud_0_a_transformed_elaborated.pcd", *cloud_0_a_e);
+    pcl::io::savePCDFileASCII("/home/mpp/PANOTEC/RGBD_ObjectVolumeEstimator/data/cloud_1_a_transformed_elaborated.pcd", *cloud_1_a_e);
+    pcl::io::savePCDFileASCII("/home/mpp/PANOTEC/RGBD_ObjectVolumeEstimator/data/cloud_0_b_transformed_elaborated.pcd", *cloud_0_b_e);
+    pcl::io::savePCDFileASCII("/home/mpp/PANOTEC/RGBD_ObjectVolumeEstimator/data/cloud_1_b_transformed_elaborated.pcd", *cloud_1_b_e);
+    pcl::io::savePCDFileASCII("/home/mpp/PANOTEC/RGBD_ObjectVolumeEstimator/data/cloud_0_c_transformed_elaborated.pcd", *cloud_0_c_e);
+    pcl::io::savePCDFileASCII("/home/mpp/PANOTEC/RGBD_ObjectVolumeEstimator/data/cloud_1_c_transformed_elaborated.pcd", *cloud_1_c_e);
+    pcl::io::savePCDFileASCII("/home/mpp/PANOTEC/RGBD_ObjectVolumeEstimator/data/cloud_0_d_transformed_elaborated.pcd", *cloud_0_d_e);
+    pcl::io::savePCDFileASCII("/home/mpp/PANOTEC/RGBD_ObjectVolumeEstimator/data/cloud_1_d_transformed_elaborated.pcd", *cloud_1_d_e);
+    pcl::io::savePCDFileASCII("/home/mpp/PANOTEC/RGBD_ObjectVolumeEstimator/data/cloud_0_e_transformed_elaborated.pcd", *cloud_0_e_e);
+    pcl::io::savePCDFileASCII("/home/mpp/PANOTEC/RGBD_ObjectVolumeEstimator/data/cloud_1_e_transformed_elaborated.pcd", *cloud_1_e_e);
+    pcl::io::savePCDFileASCII("/home/mpp/PANOTEC/RGBD_ObjectVolumeEstimator/data/cloud_0_f_transformed_elaborated.pcd", *cloud_0_f_e);
+    pcl::io::savePCDFileASCII("/home/mpp/PANOTEC/RGBD_ObjectVolumeEstimator/data/cloud_1_f_transformed_elaborated.pcd", *cloud_1_f_e);
+
+    /*
     //Start visualizer thread
     VisualizerThread visualizer;
     boost::thread * visualizerThread = new boost::thread(visualizer);
@@ -438,5 +518,5 @@ int main ()
     grabberThread.join();
     visualizerThread->join();
     return 0;
-
+*/
 }
