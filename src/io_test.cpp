@@ -129,8 +129,7 @@ void pairAlign (const pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud_src,
     pcl::NormalEstimation<PointT, PointNormalT> norm_est;
     pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ> ());
     norm_est.setSearchMethod (tree);
-    //norm_est.setKSearch (5);
-    norm_est.setRadiusSearch(0.05);
+    norm_est.setKSearch (5);
 
     norm_est.setInputCloud (src);
     norm_est.compute (*points_with_normals_src);
@@ -145,10 +144,10 @@ void pairAlign (const pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud_src,
     pcl::IterativeClosestPointNonLinear<PointNormalT, PointNormalT> reg;
     PointCloudWithNormals::Ptr reg_result = points_with_normals_src;
 
-    reg.setTransformationEpsilon (1e-1);
+    reg.setTransformationEpsilon (1e-2);
     // Set the maximum distance between two correspondences (src<->tgt) to 10cm
     // Note: adjust this based on the size of your datasets
-    reg.setMaxCorrespondenceDistance (0.05);
+    reg.setMaxCorrespondenceDistance (0.01);
 
     reg.setInputSource (points_with_normals_src);
     reg.setInputTarget (points_with_normals_tgt);
@@ -277,6 +276,32 @@ void transformCloud0(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud)
     transformMatrix(3,3) = 1.0f;
 
     pcl::transformPointCloud(*cloud, *cloud, transformMatrix);
+
+    /// R
+    transformMatrix(0,0) = 1;
+    transformMatrix(0,1) = 0;
+    transformMatrix(0,2) = 0;
+
+    transformMatrix(1,0) = 0;
+    transformMatrix(1,1) = 1;
+    transformMatrix(1,2) = 0;
+
+    transformMatrix(2,0) = 0;
+    transformMatrix(2,1) = 0;
+    transformMatrix(2,2) = 1;
+
+    /// T
+    transformMatrix(0,3) = 0.11;
+    transformMatrix(1,3) = 0;
+    transformMatrix(2,3) = 0.01;
+
+    /// Homogeneous...
+    transformMatrix(3,0) = 0.0f;
+    transformMatrix(3,1) = 0.0f;
+    transformMatrix(3,2) = 0.0f;
+    transformMatrix(3,3) = 1.0f;
+
+    pcl::transformPointCloud(*cloud, *cloud, transformMatrix);
 }
 
 void elaborateCloud(const pcl::PointCloud<pcl::PointXYZ>::Ptr &src, pcl::PointCloud<pcl::PointXYZ>::Ptr &dst)
@@ -377,8 +402,11 @@ void computeBB(const pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud, BoundingBox &bb
     const Eigen::Quaternionf qfinal(eigDx);
     const Eigen::Vector3f tfinal = eigDx*mean_diag + centroid.head<3>();
 
-    bb.max_pt = max_pt;
-    bb.min_pt = min_pt;
+    pcl::PointXYZ min, max;
+    pcl::getMinMax3D(*cloud, min, max);
+
+    bb.max_pt = min;
+    bb.min_pt = max;
     bb.qfinal = qfinal;
     bb.tfinal = tfinal;
 }
@@ -386,7 +414,75 @@ void computeBB(const pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud, BoundingBox &bb
 
 int main ()
 {
+    //Start visualizer thread
+    VisualizerThread visualizer;
+    boost::thread * visualizerThread = new boost::thread(visualizer);
 
+#ifdef GRAB_
+    CloudsGrabber cg;
+    boost::thread grabberThread(cg);
+#endif
+    while (!visualizer.wasStopped())
+    {
+        pcl::PointCloud<pcl::PointXYZ>::Ptr c0(new pcl::PointCloud<pcl::PointXYZ>);
+        pcl::PointCloud<pcl::PointXYZ>::Ptr c1(new pcl::PointCloud<pcl::PointXYZ>);
+        pcl::PointCloud<pcl::PointXYZ>::Ptr e0, e1;
+
+#ifdef GRAB_
+        c0 = cg.getCloud0();
+        c1 = cg.getCloud1();
+#else
+        pcl::io::loadPCDFile<pcl::PointXYZ> ("/home/mpp/PANOTEC/RGBD_ObjectVolumeEstimator/data/cloud_0_a.pcd", *c0);
+        pcl::io::loadPCDFile<pcl::PointXYZ> ("/home/mpp/PANOTEC/RGBD_ObjectVolumeEstimator/data/cloud_1_a.pcd", *c1);
+#endif
+
+        //std::cout << "wtf??" << c0->points.size() << " - " << c1->points.size() << std::endl;
+
+        elaborateCloud(c0, e0);
+        elaborateCloud(c1, e1);
+
+        visualizer.updateCloud(e0, VisualizerThread::VIEWPORT::OBJ0);
+        visualizer.updateCloud(e1, VisualizerThread::VIEWPORT::OBJ1);
+
+        pcl::PointCloud<pcl::PointXYZ>::Ptr
+                registered (new pcl::PointCloud<pcl::PointXYZ>);
+        if (e0->points.size() > 1 && e1->points.size() > 1)
+        {
+            //PCL_INFO("3 - registration");
+            /// 3 - registration...
+            transformCloud0(e0);
+            transformCloud1(e1);
+
+            Eigen::Matrix4f GlobalTransform;
+            pairAlign(e0, e1, registered, GlobalTransform, true);
+            //*registered = *e0;
+            //*registered += *e1;
+        }
+        visualizer.updateCloud(registered, VisualizerThread::VIEWPORT::COMPLETE);
+
+        BoundingBox bb;
+        computeBB(registered, bb);
+        std::cout << "(x,y,z): (" << bb.max_pt.x - bb.min_pt.x
+                  <<  ", " << bb.max_pt.y - bb.min_pt.y
+                  <<  ", " << bb.max_pt.z - bb.min_pt.z << ")" << std::endl;
+
+        visualizer.updateBB(bb);
+
+        usleep(5000);
+        //boost::this_thread::sleep (boost::posix_time::seconds (0.5));
+    }
+
+    std::cout << "exiting..." << std::endl;
+#ifdef GRAB_
+    cg.stopGrabber();
+    grabberThread.join();
+#endif
+    visualizerThread->join();
+
+    return 0;
+}
+
+/*
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_0_a (new pcl::PointCloud<pcl::PointXYZ>);
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_1_a (new pcl::PointCloud<pcl::PointXYZ>);
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_0_b (new pcl::PointCloud<pcl::PointXYZ>);
@@ -464,59 +560,4 @@ int main ()
     pcl::io::savePCDFileASCII("/home/mpp/PANOTEC/RGBD_ObjectVolumeEstimator/data/cloud_1_e_transformed_elaborated.pcd", *cloud_1_e_e);
     pcl::io::savePCDFileASCII("/home/mpp/PANOTEC/RGBD_ObjectVolumeEstimator/data/cloud_0_f_transformed_elaborated.pcd", *cloud_0_f_e);
     pcl::io::savePCDFileASCII("/home/mpp/PANOTEC/RGBD_ObjectVolumeEstimator/data/cloud_1_f_transformed_elaborated.pcd", *cloud_1_f_e);
-
-    /*
-    //Start visualizer thread
-    VisualizerThread visualizer;
-    boost::thread * visualizerThread = new boost::thread(visualizer);
-
-    CloudsGrabber cg;
-    boost::thread grabberThread(cg);
-
-    while (!visualizer.wasStopped())
-    {
-        pcl::PointCloud<pcl::PointXYZ>::Ptr c0 = cg.getCloud0();
-        pcl::PointCloud<pcl::PointXYZ>::Ptr c1 = cg.getCloud1();
-        pcl::PointCloud<pcl::PointXYZ>::Ptr e0, e1;
-
-        //std::cout << "wtf??" << c0->points.size() << " - " << c1->points.size() << std::endl;
-
-        elaborateCloud(c0, e0);
-        elaborateCloud(c1, e1);
-
-        visualizer.updateCloud(e0, VisualizerThread::VIEWPORT::OBJ0);
-        visualizer.updateCloud(e1, VisualizerThread::VIEWPORT::OBJ1);
-
-        pcl::PointCloud<pcl::PointXYZ>::Ptr
-                registered (new pcl::PointCloud<pcl::PointXYZ>);
-        if (e0->points.size() > 1 && e1->points.size() > 1)
-        {
-            //PCL_INFO("3 - registration");
-            /// 3 - registration...
-            transformCloud1(e1);
-            transformCloud0(e0);
-            Eigen::Matrix4f GlobalTransform;
-            pairAlign(e0, e1, registered, GlobalTransform);
-            //*registered = *e0;
-            //*registered += *e1;
-        }
-        visualizer.updateCloud(registered, VisualizerThread::VIEWPORT::COMPLETE);
-
-        BoundingBox bb;
-        computeBB(registered, bb);
-        std::cout << "(x,y,z): (" << bb.max_pt.x - bb.min_pt.x
-                  <<  ", " << bb.max_pt.y - bb.min_pt.y
-                  <<  ", " << bb.max_pt.z - bb.min_pt.z << ")" << std::endl;
-
-        visualizer.updateBB(bb);
-
-        usleep(500000);
-        //boost::this_thread::sleep (boost::posix_time::seconds (0.5));
-    }
-    cg.stopGrabber();
-    std::cout << "exiting..." << std::endl;
-    grabberThread.join();
-    visualizerThread->join();
-    return 0;
-*/
-}
+ */

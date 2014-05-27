@@ -136,11 +136,16 @@ void VisualizerThread::operator()()
             if (bb_)
             {
                 //std::cout << "add bb" << std::endl;
-                viewer_->addCube(bb_->tfinal, bb_->qfinal,
-                            bb_->max_pt.x - bb_->min_pt.x,
-                            bb_->max_pt.y - bb_->min_pt.y,
-                            bb_->max_pt.z - bb_->min_pt.z,
-                            std::to_string(v_complete_), v_complete_);
+                //viewer_->addCube(bb_->tfinal, bb_->qfinal,
+                //            bb_->max_pt.x - bb_->min_pt.x,
+                //            bb_->max_pt.y - bb_->min_pt.y,
+                //            bb_->max_pt.z - bb_->min_pt.z,
+                //            std::to_string(v_complete_), v_complete_);
+                viewer_->addCube(bb_->min_pt.x, bb_->max_pt.x,
+                                 bb_->min_pt.y, bb_->max_pt.y,
+                                 bb_->min_pt.z, bb_->max_pt.z,
+                                 1.0,1.0,1.0,
+                                 std::to_string(v_complete_), v_complete_);
             }
             viewer_->addText ("Camera complete", 10, 10, "v complete text", v_complete_);
 
