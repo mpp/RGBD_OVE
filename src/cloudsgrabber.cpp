@@ -29,6 +29,8 @@ CloudsGrabber::CloudsGrabber()
     cloud_1_->height = 1;
 
     grab_stop_ = new bool(false);
+    file0_ = false;
+    file1_ = false;
 }
 
 void CloudsGrabber::operator ()()
@@ -85,6 +87,12 @@ void CloudsGrabber::cloudCallback0(const pcl::PointCloud<pcl::PointXYZ>::ConstPt
     interface_1_->start();
     grab_mutex_->unlock();
     //std::cout << "unlock0" << std::endl;
+
+    if (!file0_)
+    {
+        pcl::io::savePCDFileASCII("cloud_0.pcd", *cloud);
+        file0_ = true;
+    }
 }
 
 void CloudsGrabber::cloudCallback1(const pcl::PointCloud<pcl::PointXYZ>::ConstPtr &cloud)
@@ -101,6 +109,12 @@ void CloudsGrabber::cloudCallback1(const pcl::PointCloud<pcl::PointXYZ>::ConstPt
     interface_0_->start();
     grab_mutex_->unlock();
     //std::cout << "unlock1" << std::endl;
+
+    if (!file1_)
+    {
+        pcl::io::savePCDFileASCII("cloud_1.pcd", *cloud);
+        file1_ = true;
+    }
 }
 
 void CloudsGrabber::copyCloud(const pcl::PointCloud<pcl::PointXYZ>::ConstPtr &source,

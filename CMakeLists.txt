@@ -8,6 +8,9 @@ ADD_DEFINITIONS(
     -Wno-deprecated
 )
 
+#set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR})
+#find_package( OpenNI2 REQUIRED )
+
 find_package(PCL 1.3 REQUIRED COMPONENTS common visualization io filters sample_consensus segmentation registration)
 
 include_directories(/usr/include ${PCL_INCLUDE_DIRS})
@@ -31,4 +34,5 @@ target_link_libraries(
     ${PCL_FILTERS_LIBRARIES}
     ${PCL_VISUALIZATION_LIBRARIES}
     ${PCL_REGISTRATION_LIBRARIES}
+#    ${OPENNI2_LIBRARIES}
 )

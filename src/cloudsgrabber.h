@@ -3,7 +3,9 @@
 
 #include <boost/thread.hpp>
 #include <pcl/common/common_headers.h>
+#include <pcl/io/pcd_io.h>
 #include <pcl/io/openni_grabber.h>
+#include <openni2/OpenNI.h>
 #include <mutex>
 
 class CloudsGrabber
@@ -41,6 +43,10 @@ private:
 
     bool
         * grab_stop_;
+
+    bool
+        file0_,
+        file1_;
 };
 
 #endif // CLOUDSGRABBER_H
