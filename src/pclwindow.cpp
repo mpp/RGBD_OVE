@@ -56,12 +56,12 @@ Pclwindow::~Pclwindow()
     delete ui;
 }
 
-void Pclwindow::on_action_triggered()
+void Pclwindow::on_exitAction_triggered()
 {
     this->close();
 }
 
-void Pclwindow::on_action_2_triggered()
+void Pclwindow::on_openFile0Action_triggered()
 {
     QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"), "", tr("Files (*.pcd)"));
     if (fileName != "")
@@ -70,20 +70,21 @@ void Pclwindow::on_action_2_triggered()
         ui->widget->setDisabled(true);
         ui->menuBar->setDisabled(true);
         boost::thread t(boost::bind(pcl::io::loadPCDFile<pcl::PointXYZ>, fileName.toStdString(), boost::ref(*cloud_xyz)));
-        //for (int i = 0; i <= (int) sec; i++)
-        //{
-        //    ui->progressBar->setValue((int) ((i/sec)*100));
-        //    ui->label->setText(QString::fromStdString("Wait for "+boost::lexical_cast<std::string>(((int)sec)-i)+" sec"));
-            //boost::this_thread::sleep(boost::posix_time::seconds(1)); // wait 1 sec
-        //}
+        /*int sec = 10;
+        for (int i = 0; i <= (int) sec; i++)
+        {
+            ui->progressBar->setValue((int) ((i/sec)*100));
+            ui->label->setText(QString::fromStdString("Wait for "+boost::lexical_cast<std::string>(((int)sec)-i)+" sec"));
+            boost::this_thread::sleep(boost::posix_time::seconds(1)); // wait 1 sec
+        }*/
         t.join();
-        ui->progressBar->setValue(100);
+        //ui->progressBar->setValue(100);
         ui->widget->setEnabled(true);
         ui->menuBar->setEnabled(true);
         if (cloud_xyz->size() > 0)
         {
             pviz.addPointCloud<pcl::PointXYZ>(cloud_xyz);
-            ui->progressBar->setValue(0);
+            //ui->progressBar->setValue(0);
         }
     };
 }

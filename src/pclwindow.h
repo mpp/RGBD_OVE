@@ -17,9 +17,9 @@ public:
     ~Pclwindow();
 
 private slots:
-    void on_action_triggered();
+    void on_exitAction_triggered();
 
-    void on_action_2_triggered();
+    void on_openFile0Action_triggered();
 
 
 private:
