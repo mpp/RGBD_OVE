@@ -424,30 +424,39 @@ int main ()
     CloudsGrabber cg;
     boost::thread grabberThread(cg);
 #endif
+
+    pcl::PointCloud<pcl::PointXYZ>::Ptr c0(new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr c1(new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr e0(new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr e1(new pcl::PointCloud<pcl::PointXYZ>);
+
+#ifndef GRAB_
+        pcl::io::loadPCDFile<pcl::PointXYZ> ("/home/mpp/PANOTEC/RGBD_ObjectVolumeEstimator/data/cloud_0_a.pcd", *c0);
+        pcl::io::loadPCDFile<pcl::PointXYZ> ("/home/mpp/PANOTEC/RGBD_ObjectVolumeEstimator/data/cloud_1_a.pcd", *c1);
+        pcl::copyPointCloud(*c0, *e0);
+        pcl::copyPointCloud(*c1, *e1);
+        transformCloud0(e0);
+        transformCloud1(e1);
+        Eigen::Matrix4f e0T;
+        Eigen::Matrix4f e1T;
+#endif
+
     while (!visualizer.wasStopped())
     {
-        pcl::PointCloud<pcl::PointXYZ>::Ptr e0(new pcl::PointCloud<pcl::PointXYZ>);
-        pcl::PointCloud<pcl::PointXYZ>::Ptr e1(new pcl::PointCloud<pcl::PointXYZ>);
-        //pcl::PointCloud<pcl::PointXYZ>::Ptr e0, e1;
-
 #ifdef GRAB_
         c0 = cg.getCloud0();
         c1 = cg.getCloud1();
-#else
-        pcl::io::loadPCDFile<pcl::PointXYZ> ("/home/mpp/PANOTEC/RGBD_ObjectVolumeEstimator/data/cloud_0_a.pcd", *e0);
-        pcl::io::loadPCDFile<pcl::PointXYZ> ("/home/mpp/PANOTEC/RGBD_ObjectVolumeEstimator/data/cloud_1_a.pcd", *e1);
 #endif
-
-        //std::cout << "wtf??" << c0->points.size() << " - " << c1->points.size() << std::endl;
-
         //elaborateCloud(c0, e0);
         //elaborateCloud(c1, e1);
 
-        visualizer.updateCloud(e0, VisualizerThread::VIEWPORT::OBJ0);
-        visualizer.updateCloud(e1, VisualizerThread::VIEWPORT::OBJ1);
+        visualizer.updateCloud(c0, VisualizerThread::VIEWPORT::OBJ0);
+        visualizer.updateCloud(c1, VisualizerThread::VIEWPORT::OBJ1);
 
         pcl::PointCloud<pcl::PointXYZ>::Ptr
                 registered (new pcl::PointCloud<pcl::PointXYZ>);
+
+#ifdef GRAB_
         if (e0->points.size() > 1 && e1->points.size() > 1)
         {
             //PCL_INFO("3 - registration");
@@ -456,10 +465,11 @@ int main ()
             transformCloud1(e1);
 
             Eigen::Matrix4f GlobalTransform;
-            pairAlign(e0, e1, registered, GlobalTransform, true);
-            //*registered = *e0;
-            //*registered += *e1;
+            //pairAlign(e0, e1, registered, GlobalTransform, true);
+            *registered = *e0;
+            *registered += *e1;
         }
+#endif
         visualizer.updateCloud(registered, VisualizerThread::VIEWPORT::COMPLETE);
 
         BoundingBox bb;

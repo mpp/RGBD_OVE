@@ -55,6 +55,26 @@ VisualizerThread::VisualizerThread()
     bb_ = std::shared_ptr<BoundingBox>(new BoundingBox);
 }
 
+/*unsigned int text_id = 0;
+void VisualizerThread::keyboardEventOccurred (const pcl::visualization::KeyboardEvent &event,
+                                              void* viewer_void)
+{
+ boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer = *static_cast<boost::shared_ptr<pcl::visualization::PCLVisualizer> *> (viewer_void);
+  if (event.getKeySym () == "r" && event.keyDown ())
+  {
+    std::cout << "r was pressed => removing all text" << std::endl;
+
+    char str[512];
+    for (unsigned int i = 0; i < text_id; ++i)
+    {
+      sprintf (str, "text#%03d", i);
+      viewer->removeShape (str);
+    }
+    text_id = 0;
+  }
+}*/
+
+
 void VisualizerThread::updateCloud(const pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud,
                                    const VIEWPORT cloudName)
 {

@@ -1,5 +1,4 @@
 #include "pclwindow.h"
-#include "build/ui_pclwindow.h"
 #include <QFileDialog>
 #include <QMessageBox>
 
@@ -13,8 +12,6 @@
 #include <boost/filesystem.hpp>
 #include <boost/thread/thread.hpp>
 #include <boost/bind.hpp>
-
-
 
 pcl::visualization::PCLVisualizer pviz ("test_viz", false);
 pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_xyz (new pcl::PointCloud<pcl::PointXYZ>);

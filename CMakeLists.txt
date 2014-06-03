@@ -20,13 +20,15 @@ add_definitions(${PCL_DEFINITIONS})
 FIND_PACKAGE(VTK)
 INCLUDE(${VTK_USE_FILE})
 
+set(QT_QMAKE_EXECUTABLE /usr/bin/qmake-qt4)
+
 FIND_PACKAGE(Qt4 REQUIRED)
 INCLUDE(${QT_USE_FILE})
+include_directories(src)
 
-file(GLOB UI_FILES *.ui)
-file(GLOB QT_WRAP *.h)
+file(GLOB UI_FILES build/*.ui)
+file(GLOB QT_WRAP src/*.h)
 file(GLOB CXX_FILES *.cpp)
-
 
 QT4_WRAP_UI(UISrcs ${UI_FILES})
 QT4_WRAP_CPP(MOCSrcs ${QT_WRAP})
@@ -54,7 +56,9 @@ add_executable(
 
 add_executable(
     qttest
+    ${CXX_FILES}
     src/qttest.cpp
+    src/pclwindow.cpp
     ${UISrcs} ${MOCSrcs}
 )
 

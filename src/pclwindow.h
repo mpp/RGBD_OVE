@@ -2,10 +2,11 @@
 #define PCLWINDOW_H
 
 #include <QMainWindow>
+#include "../build/ui_pclwindow.h"
 
-namespace Ui {
+/*namespace Ui {
 class Pclwindow;
-}
+}*/
 
 class Pclwindow : public QMainWindow
 {

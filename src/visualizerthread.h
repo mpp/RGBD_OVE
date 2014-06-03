@@ -6,6 +6,8 @@
 #include <pcl/common/common_headers.h>
 #include <pcl/visualization/pcl_visualizer.h>
 
+#include "cloudinteraction.h"
+
 typedef struct BoundingBox_
 {
     pcl::PointXYZ
@@ -40,6 +42,9 @@ public:
     void updateBB(const BoundingBox &bb);
 
     bool wasStopped() {return viewer_->wasStopped();}
+
+    /*void keyboardEventOccurred (const pcl::visualization::KeyboardEvent &event,
+                                void* viewer_void)*/
 
 private:
     void copyCloud (const pcl::PointCloud<pcl::PointXYZ>::ConstPtr &source, pcl::PointCloud<pcl::PointXYZ>::Ptr &dest);
