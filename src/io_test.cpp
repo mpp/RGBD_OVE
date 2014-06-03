@@ -49,9 +49,9 @@
 #include "visualizerthread.h"
 #include "cloudsgrabber.h"
 
-#define MIN_X -0.3f
-#define MAX_X 0.3f
-#define MIN_Y -0.3f
+#define MIN_X -0.5f
+#define MAX_X 0.5f
+#define MIN_Y -0.26f
 #define MAX_Y 0.55f
 #define MIN_Z 0.0f
 #define MAX_Z 1.5f
@@ -141,16 +141,18 @@ void pairAlign (const pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud_src,
 
     //
     // Align
-    pcl::IterativeClosestPointNonLinear<PointNormalT, PointNormalT> reg;
-    PointCloudWithNormals::Ptr reg_result = points_with_normals_src;
+    //pcl::IterativeClosestPointNonLinear<PointNormalT, PointNormalT> reg;
+    //PointCloudWithNormals::Ptr reg_result = points_with_normals_src;
+    pcl::IterativeClosestPointNonLinear<pcl::PointXYZ, pcl::PointXYZ> reg;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr reg_result = src;
 
-    reg.setTransformationEpsilon (1e-2);
+    reg.setTransformationEpsilon (1e-1);
     // Set the maximum distance between two correspondences (src<->tgt) to 10cm
     // Note: adjust this based on the size of your datasets
     reg.setMaxCorrespondenceDistance (0.01);
 
-    reg.setInputSource (points_with_normals_src);
-    reg.setInputTarget (points_with_normals_tgt);
+    reg.setInputSource (src);
+    reg.setInputTarget (tgt);
 
     reg.setMaximumIterations (25);
     reg.align (*reg_result);
@@ -424,22 +426,22 @@ int main ()
 #endif
     while (!visualizer.wasStopped())
     {
-        pcl::PointCloud<pcl::PointXYZ>::Ptr c0(new pcl::PointCloud<pcl::PointXYZ>);
-        pcl::PointCloud<pcl::PointXYZ>::Ptr c1(new pcl::PointCloud<pcl::PointXYZ>);
-        pcl::PointCloud<pcl::PointXYZ>::Ptr e0, e1;
+        pcl::PointCloud<pcl::PointXYZ>::Ptr e0(new pcl::PointCloud<pcl::PointXYZ>);
+        pcl::PointCloud<pcl::PointXYZ>::Ptr e1(new pcl::PointCloud<pcl::PointXYZ>);
+        //pcl::PointCloud<pcl::PointXYZ>::Ptr e0, e1;
 
 #ifdef GRAB_
         c0 = cg.getCloud0();
         c1 = cg.getCloud1();
 #else
-        pcl::io::loadPCDFile<pcl::PointXYZ> ("/home/mpp/PANOTEC/RGBD_ObjectVolumeEstimator/data/cloud_0_a.pcd", *c0);
-        pcl::io::loadPCDFile<pcl::PointXYZ> ("/home/mpp/PANOTEC/RGBD_ObjectVolumeEstimator/data/cloud_1_a.pcd", *c1);
+        pcl::io::loadPCDFile<pcl::PointXYZ> ("/home/mpp/PANOTEC/RGBD_ObjectVolumeEstimator/data/cloud_0_a.pcd", *e0);
+        pcl::io::loadPCDFile<pcl::PointXYZ> ("/home/mpp/PANOTEC/RGBD_ObjectVolumeEstimator/data/cloud_1_a.pcd", *e1);
 #endif
 
         //std::cout << "wtf??" << c0->points.size() << " - " << c1->points.size() << std::endl;
 
-        elaborateCloud(c0, e0);
-        elaborateCloud(c1, e1);
+        //elaborateCloud(c0, e0);
+        //elaborateCloud(c1, e1);
 
         visualizer.updateCloud(e0, VisualizerThread::VIEWPORT::OBJ0);
         visualizer.updateCloud(e1, VisualizerThread::VIEWPORT::OBJ1);
