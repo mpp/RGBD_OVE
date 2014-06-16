@@ -26,7 +26,7 @@ FIND_PACKAGE(Qt4 REQUIRED)
 INCLUDE(${QT_USE_FILE})
 include_directories(src)
 
-file(GLOB UI_FILES build/*.ui)
+file(GLOB UI_FILES ui/*.ui)
 file(GLOB QT_WRAP src/*.h)
 file(GLOB CXX_FILES *.cpp)
 
@@ -59,6 +59,7 @@ add_executable(
     ${CXX_FILES}
     src/qttest.cpp
     src/pclwindow.cpp
+    src/cloudinteraction.cpp
     ${UISrcs} ${MOCSrcs}
 )
 
