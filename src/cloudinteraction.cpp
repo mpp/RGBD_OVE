@@ -54,141 +54,141 @@ void applyRotation(double angle, const Eigen::Vector3f &axis, Eigen::Matrix4f &t
 }
 
 /// X axis linear
-void x_t_inc_callback(CloudPtr &in_out_cloud, float step)
+void x_t_inc_callback(CloudPtr &in_out_cloud, boost::shared_ptr<Eigen::Matrix4f> &transformMatrix, float step)
 {
     step = checkLinStep(step);
 
-    Eigen::Matrix4f transformMatrix = identity();
+    (*transformMatrix) = identity();
 
-    transformMatrix(0,3) = step;
+    (*transformMatrix)(0,3) = step;
 
-    pcl::transformPointCloud(*in_out_cloud, *in_out_cloud, transformMatrix);
+    pcl::transformPointCloud(*in_out_cloud, *in_out_cloud, (*transformMatrix));
 }
 
-void x_t_dec_callback(CloudPtr &in_out_cloud, float step)
+void x_t_dec_callback(CloudPtr &in_out_cloud, boost::shared_ptr<Eigen::Matrix4f> &transformMatrix, float step)
 {
     step = checkLinStep(step);
 
-    Eigen::Matrix4f transformMatrix = identity();
+    (*transformMatrix) = identity();
 
-    transformMatrix(0,3) = -step;
+    (*transformMatrix)(0,3) = -step;
 
-    pcl::transformPointCloud(*in_out_cloud, *in_out_cloud, transformMatrix);
+    pcl::transformPointCloud(*in_out_cloud, *in_out_cloud, (*transformMatrix));
 }
 
 /// Y axis linear
-void y_t_inc_callback(CloudPtr &in_out_cloud, float step)
+void y_t_inc_callback(CloudPtr &in_out_cloud, boost::shared_ptr<Eigen::Matrix4f> &transformMatrix, float step)
 {
     step = checkLinStep(step);
 
-    Eigen::Matrix4f transformMatrix = identity();
+    (*transformMatrix) = identity();
 
-    transformMatrix(1,3) = step;
+    (*transformMatrix)(1,3) = step;
 
-    pcl::transformPointCloud(*in_out_cloud, *in_out_cloud, transformMatrix);
+    pcl::transformPointCloud(*in_out_cloud, *in_out_cloud, (*transformMatrix));
 }
 
-void y_t_dec_callback(CloudPtr &in_out_cloud, float step)
+void y_t_dec_callback(CloudPtr &in_out_cloud, boost::shared_ptr<Eigen::Matrix4f> &transformMatrix, float step)
 {
     step = checkLinStep(step);
 
-    Eigen::Matrix4f transformMatrix = identity();
+    (*transformMatrix) = identity();
 
-    transformMatrix(1,3) = -step;
+    (*transformMatrix)(1,3) = -step;
 
-    pcl::transformPointCloud(*in_out_cloud, *in_out_cloud, transformMatrix);
+    pcl::transformPointCloud(*in_out_cloud, *in_out_cloud, (*transformMatrix));
 }
 
 /// Z axis linear
-void z_t_inc_callback(CloudPtr &in_out_cloud, float step)
+void z_t_inc_callback(CloudPtr &in_out_cloud, boost::shared_ptr<Eigen::Matrix4f> &transformMatrix, float step)
 {
     step = checkLinStep(step);
 
-    Eigen::Matrix4f transformMatrix = identity();
+    (*transformMatrix) = identity();
 
-    transformMatrix(2,3) = step;
+    (*transformMatrix)(2,3) = step;
 
-    pcl::transformPointCloud(*in_out_cloud, *in_out_cloud, transformMatrix);
+    pcl::transformPointCloud(*in_out_cloud, *in_out_cloud, (*transformMatrix));
 }
 
-void z_t_dec_callback(CloudPtr &in_out_cloud, float step)
+void z_t_dec_callback(CloudPtr &in_out_cloud, boost::shared_ptr<Eigen::Matrix4f> &transformMatrix, float step)
 {
     step = checkLinStep(step);
 
-    Eigen::Matrix4f transformMatrix = identity();
+    (*transformMatrix) = identity();
 
-    transformMatrix(2,3) = -step;
+    (*transformMatrix)(2,3) = -step;
 
-    pcl::transformPointCloud(*in_out_cloud, *in_out_cloud, transformMatrix);
+    pcl::transformPointCloud(*in_out_cloud, *in_out_cloud, (*transformMatrix));
 }
 
 /// X axis angular
-void x_r_inc_callback(CloudPtr &in_out_cloud, float step)
+void x_r_inc_callback(CloudPtr &in_out_cloud, boost::shared_ptr<Eigen::Matrix4f> &transformMatrix, float step)
 {
     step = checkAngStep(step);
 
-    Eigen::Matrix4f transformMatrix = identity();
+    (*transformMatrix) = identity();
 
-    applyRotation(step, Eigen::Vector3f(1.0,0,0), transformMatrix);
+    applyRotation(step, Eigen::Vector3f(1.0,0,0), (*transformMatrix));
 
-    pcl::transformPointCloud(*in_out_cloud, *in_out_cloud, transformMatrix);
+    pcl::transformPointCloud(*in_out_cloud, *in_out_cloud, (*transformMatrix));
 }
 
-void x_r_dec_callback(CloudPtr &in_out_cloud, float step)
+void x_r_dec_callback(CloudPtr &in_out_cloud, boost::shared_ptr<Eigen::Matrix4f> &transformMatrix, float step)
 {
     step = checkAngStep(step);
 
-    Eigen::Matrix4f transformMatrix = identity();
+    (*transformMatrix) = identity();
 
-    applyRotation(-step, Eigen::Vector3f(1.0,0,0), transformMatrix);
+    applyRotation(-step, Eigen::Vector3f(1.0,0,0), (*transformMatrix));
 
-    pcl::transformPointCloud(*in_out_cloud, *in_out_cloud, transformMatrix);
+    pcl::transformPointCloud(*in_out_cloud, *in_out_cloud, (*transformMatrix));
 }
 
 /// Y axis angular
-void y_r_inc_callback(CloudPtr &in_out_cloud, float step)
+void y_r_inc_callback(CloudPtr &in_out_cloud, boost::shared_ptr<Eigen::Matrix4f> &transformMatrix, float step)
 {
     step = checkAngStep(step);
 
-    Eigen::Matrix4f transformMatrix = identity();
+    (*transformMatrix) = identity();
 
-    applyRotation(step, Eigen::Vector3f(0,1.0,0), transformMatrix);
+    applyRotation(step, Eigen::Vector3f(0,1.0,0), (*transformMatrix));
 
-    pcl::transformPointCloud(*in_out_cloud, *in_out_cloud, transformMatrix);
+    pcl::transformPointCloud(*in_out_cloud, *in_out_cloud, (*transformMatrix));
 }
 
-void y_r_dec_callback(CloudPtr &in_out_cloud, float step)
+void y_r_dec_callback(CloudPtr &in_out_cloud, boost::shared_ptr<Eigen::Matrix4f> &transformMatrix, float step)
 {
     step = checkAngStep(step);
 
-    Eigen::Matrix4f transformMatrix = identity();
+    (*transformMatrix) = identity();
 
-    applyRotation(-step, Eigen::Vector3f(0,1.0,0), transformMatrix);
+    applyRotation(-step, Eigen::Vector3f(0,1.0,0), (*transformMatrix));
 
-    pcl::transformPointCloud(*in_out_cloud, *in_out_cloud, transformMatrix);
+    pcl::transformPointCloud(*in_out_cloud, *in_out_cloud, (*transformMatrix));
 }
 
 /// Z axis angular
-void z_r_inc_callback(CloudPtr &in_out_cloud, float step)
+void z_r_inc_callback(CloudPtr &in_out_cloud, boost::shared_ptr<Eigen::Matrix4f> &transformMatrix, float step)
 {
     step = checkAngStep(step);
 
-    Eigen::Matrix4f transformMatrix = identity();
+    (*transformMatrix) = identity();
 
-    applyRotation(step, Eigen::Vector3f(0,0,1.0), transformMatrix);
+    applyRotation(step, Eigen::Vector3f(0,0,1.0), (*transformMatrix));
 
-    pcl::transformPointCloud(*in_out_cloud, *in_out_cloud, transformMatrix);
+    pcl::transformPointCloud(*in_out_cloud, *in_out_cloud, (*transformMatrix));
 }
 
-void z_r_dec_callback(CloudPtr &in_out_cloud, float step)
+void z_r_dec_callback(CloudPtr &in_out_cloud, boost::shared_ptr<Eigen::Matrix4f> &transformMatrix, float step)
 {
     step = checkAngStep(step);
 
-    Eigen::Matrix4f transformMatrix = identity();
+    (*transformMatrix) = identity();
 
-    applyRotation(-step, Eigen::Vector3f(0,0,1.0), transformMatrix);
+    applyRotation(-step, Eigen::Vector3f(0,0,1.0), (*transformMatrix));
 
-    pcl::transformPointCloud(*in_out_cloud, *in_out_cloud, transformMatrix);
+    pcl::transformPointCloud(*in_out_cloud, *in_out_cloud, (*transformMatrix));
 }
 
 }

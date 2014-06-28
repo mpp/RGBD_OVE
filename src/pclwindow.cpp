@@ -1,3 +1,4 @@
+#include <boost/make_shared.hpp>
 #include "pclwindow.h"
 
 pcl::visualization::PCLVisualizer pviz ("test_viz", false);
@@ -28,6 +29,13 @@ Pclwindow::Pclwindow(QWidget *parent) :
     rotation_step_ = 0.01;
 
     cloud_to_edit_ = 0;
+
+    Eigen::Matrix4f mat = clinter::identity();
+
+    t_0_ = boost::make_shared<Eigen::Matrix4f>(mat);
+    t_1_ = boost::make_shared<Eigen::Matrix4f>(mat);
+    t_2_ = boost::make_shared<Eigen::Matrix4f>(mat);
+    t_3_ = boost::make_shared<Eigen::Matrix4f>(mat);
 }
 
 Pclwindow::~Pclwindow()
@@ -219,74 +227,98 @@ void Pclwindow::on_cloud3Radio_toggled(bool checked)
 
 void Pclwindow::on_xTIncButton_clicked()
 {
-    clinter::x_t_inc_callback(cloudToEdit(), translation_step_);
+    boost::shared_ptr<Eigen::Matrix4f> transform = boost::make_shared<Eigen::Matrix4f>(clinter::identity());
+    clinter::x_t_inc_callback(cloudToEdit(), transform, translation_step_);
     updateCloud(cloudToEdit());
+    updateTransform(transform);
 }
 
 void Pclwindow::on_yTIncButton_clicked()
 {
-    clinter::y_t_inc_callback(cloudToEdit(), translation_step_);
+    boost::shared_ptr<Eigen::Matrix4f>  transform = boost::make_shared<Eigen::Matrix4f>(clinter::identity());
+    clinter::y_t_inc_callback(cloudToEdit(), transform, translation_step_);
     updateCloud(cloudToEdit());
+    updateTransform(transform);
 }
 
 void Pclwindow::on_zTIncButton_clicked()
 {
-    clinter::z_t_inc_callback(cloudToEdit(), translation_step_);
+    boost::shared_ptr<Eigen::Matrix4f>  transform = boost::make_shared<Eigen::Matrix4f>(clinter::identity());
+    clinter::z_t_inc_callback(cloudToEdit(), transform, translation_step_);
     updateCloud(cloudToEdit());
+    updateTransform(transform);
 }
 
 void Pclwindow::on_xTDecButton_clicked()
 {
-    clinter::x_t_dec_callback(cloudToEdit(), translation_step_);
+    boost::shared_ptr<Eigen::Matrix4f>  transform = boost::make_shared<Eigen::Matrix4f>(clinter::identity());
+    clinter::x_t_dec_callback(cloudToEdit(), transform, translation_step_);
     updateCloud(cloudToEdit());
+    updateTransform(transform);
 }
 
 void Pclwindow::on_yTDecButton_clicked()
 {
-    clinter::y_t_dec_callback(cloudToEdit(), translation_step_);
+    boost::shared_ptr<Eigen::Matrix4f>  transform = boost::make_shared<Eigen::Matrix4f>(clinter::identity());
+    clinter::y_t_dec_callback(cloudToEdit(), transform, translation_step_);
     updateCloud(cloudToEdit());
+    updateTransform(transform);
 }
 
 void Pclwindow::on_zTDecButton_clicked()
 {
-    clinter::z_t_dec_callback(cloudToEdit(), translation_step_);
+    boost::shared_ptr<Eigen::Matrix4f>  transform = boost::make_shared<Eigen::Matrix4f>(clinter::identity());
+    clinter::z_t_dec_callback(cloudToEdit(), transform, translation_step_);
     updateCloud(cloudToEdit());
+    updateTransform(transform);
 }
 
 void Pclwindow::on_xRIncButton_clicked()
 {
-    clinter::x_r_inc_callback(cloudToEdit(), rotation_step_);
+    boost::shared_ptr<Eigen::Matrix4f>  transform = boost::make_shared<Eigen::Matrix4f>(clinter::identity());
+    clinter::x_r_inc_callback(cloudToEdit(), transform, rotation_step_);
     updateCloud(cloudToEdit());
+    updateTransform(transform);
 }
 
 void Pclwindow::on_xRDecButton_clicked()
 {
-    clinter::x_r_dec_callback(cloudToEdit(), rotation_step_);
+    boost::shared_ptr<Eigen::Matrix4f>  transform = boost::make_shared<Eigen::Matrix4f>(clinter::identity());
+    clinter::x_r_dec_callback(cloudToEdit(), transform, rotation_step_);
     updateCloud(cloudToEdit());
+    updateTransform(transform);
 }
 
 void Pclwindow::on_yRIncButton_clicked()
 {
-    clinter::y_r_inc_callback(cloudToEdit(), rotation_step_);
+    boost::shared_ptr<Eigen::Matrix4f>  transform = boost::make_shared<Eigen::Matrix4f>(clinter::identity());
+    clinter::y_r_inc_callback(cloudToEdit(), transform, rotation_step_);
     updateCloud(cloudToEdit());
+    updateTransform(transform);
 }
 
 void Pclwindow::on_yRDecButton_clicked()
 {
-    clinter::y_r_dec_callback(cloudToEdit(), rotation_step_);
+    boost::shared_ptr<Eigen::Matrix4f>  transform = boost::make_shared<Eigen::Matrix4f>(clinter::identity());
+    clinter::y_r_dec_callback(cloudToEdit(), transform, rotation_step_);
     updateCloud(cloudToEdit());
+    updateTransform(transform);
 }
 
 void Pclwindow::on_zRIncButton_clicked()
 {
-    clinter::z_r_inc_callback(cloudToEdit(), rotation_step_);
+    boost::shared_ptr<Eigen::Matrix4f>  transform = boost::make_shared<Eigen::Matrix4f>(clinter::identity());
+    clinter::z_r_inc_callback(cloudToEdit(), transform, rotation_step_);
     updateCloud(cloudToEdit());
+    updateTransform(transform);
 }
 
 void Pclwindow::on_zRDecButton_clicked()
 {
-    clinter::z_r_dec_callback(cloudToEdit(), rotation_step_);
+    boost::shared_ptr<Eigen::Matrix4f>  transform = boost::make_shared<Eigen::Matrix4f>(clinter::identity());
+    clinter::z_r_dec_callback(cloudToEdit(), transform, rotation_step_);
     updateCloud(cloudToEdit());
+    updateTransform(transform);
 }
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr &Pclwindow::cloudToEdit()
@@ -299,6 +331,31 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr &Pclwindow::cloudToEdit()
         return c_2_;
     if (3 == cloud_to_edit_)
         return c_3_;
+}
+
+void Pclwindow::updateTransform(boost::shared_ptr<Eigen::Matrix4f> &transformMatrix)
+{
+    // Take the right transform matrix to update
+    boost::shared_ptr<Eigen::Matrix4f> toUpdate;
+
+    switch (cloud_to_edit_) {
+        case 0:
+            toUpdate = t_0_;
+            break;
+        case 1:
+            toUpdate = t_1_;
+            break;
+        case 2:
+            toUpdate = t_2_;
+            break;
+        case 3:
+        default:
+            toUpdate = t_3_;
+            break;
+    }
+
+    // Update the transform matrix with a right-multiplication with the last transform applied
+    (*toUpdate) = (*toUpdate) * (*transformMatrix);
 }
 
 void Pclwindow::updateCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloudToEdit)
@@ -340,6 +397,25 @@ void Pclwindow::updateCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloudToEdit)
     {
         pviz.addPointCloud<pcl::PointXYZ>(cloudToEdit, single_color, cloudName);
         pviz.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, cloudName);
+    }
+}
+
+Eigen::Matrix4f Pclwindow::getTransformMatrix(const int id)
+{
+    switch (id) {
+        case 0:
+            return *t_0_;
+            break;
+        case 1:
+            return *t_1_;
+            break;
+        case 2:
+            return *t_2_;
+            break;
+        case 3:
+        default:
+            return *t_3_;
+            break;
     }
 }
 

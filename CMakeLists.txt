@@ -42,17 +42,6 @@ add_executable(
     src/cloudsgrabber.cpp
     src/workerthread.cpp
 )
-add_executable(
-    boundary_evaluator
-    src/boundaryevaluator.cpp
-    src/cloudsgrabber.cpp
-)
-add_executable(
-    ransac
-    src/ransac.cpp
-    src/simplecloudvisualizer.cpp
-    src/simplecloudgrabber.cpp
-)
 
 add_executable(
     qttest
@@ -74,31 +63,8 @@ target_link_libraries(
     ${PCL_REGISTRATION_LIBRARIES}
 #    ${OPENNI2_LIBRARIES}
 )
-target_link_libraries(
-    boundary_evaluator
-    ${OpenCV_LIBS}
-    ${PCL_COMMON_LIBRARIES}
-    ${PCL_SAMPLE_CONSENSUS_LIBRARIES}
-    ${PCL_SEGMENTATION_LIBRARIES}
-    ${PCL_IO_LIBRARIES}
-    ${PCL_FILTERS_LIBRARIES}
-    ${PCL_VISUALIZATION_LIBRARIES}
-    ${PCL_REGISTRATION_LIBRARIES}
-#    ${OPENNI2_LIBRARIES}
-)
-target_link_libraries(
-    ransac
-    ${OpenCV_LIBS}
-    ${PCL_COMMON_LIBRARIES}
-    ${PCL_SAMPLE_CONSENSUS_LIBRARIES}
-    ${PCL_SEGMENTATION_LIBRARIES}
-    ${PCL_IO_LIBRARIES}
-    ${PCL_FILTERS_LIBRARIES}
-    ${PCL_VISUALIZATION_LIBRARIES}
-    ${PCL_REGISTRATION_LIBRARIES}
-#    ${OPENNI2_LIBRARIES}
-)
 
 target_link_libraries(
     qttest QVTK ${PCL_LIBRARIES}
+    ${OpenCV_LIBRARIES}
 )

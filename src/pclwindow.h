@@ -27,6 +27,8 @@ public:
     explicit Pclwindow(QWidget *parent = 0);
     ~Pclwindow();
 
+    Eigen::Matrix4f getTransformMatrix(const int id);
+
 private slots:
     void on_exitAction_triggered();
 
@@ -81,6 +83,8 @@ private:
 
     void updateCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloudToEdit);
 
+    void updateTransform(boost::shared_ptr<Eigen::Matrix4f> &transformMatrix);
+
 private:
     Ui::Pclwindow *ui;
 
@@ -89,6 +93,12 @@ private:
         c_1_,
         c_2_,
         c_3_;
+
+    boost::shared_ptr<Eigen::Matrix4f>
+        t_0_,
+        t_1_,
+        t_2_,
+        t_3_;
 
     float
         translation_step_,

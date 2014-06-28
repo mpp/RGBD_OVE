@@ -179,7 +179,7 @@ void transformCloud1(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud)
     //  -0.477363451731259, -0.4685077929120851, -0.7433872361911151]
     //[0.1464000185043455; 0.04536204145848141; 0.9365197730555788]
     Eigen::Matrix3f m;
-
+    /*
     // this is the R inverse
     m(0,0) = 0.7158866767323938;
     m(1,0) = -0.6979344925893711;
@@ -192,6 +192,19 @@ void transformCloud1(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud)
     m(0,2) = -0.477363451731259;
     m(1,2) = -0.4685077929120851;
     m(2,2) = -0.7433872361911151;
+    */
+
+    m(0,0) = -0.70710678118;
+    m(1,0) = -0.70710678118;
+    m(2,0) = 0.0f;
+
+    m(0,1) = -0.5;
+    m(1,1) = 0.5;
+    m(2,1) = 0.70710678118;
+
+    m(0,2) = -0.5;
+    m(1,2) = 0.5;
+    m(2,2) = -0.70710678118;
 
     /// R
     transformMatrix(0,0) = m(0,0);
@@ -238,7 +251,7 @@ void transformCloud0(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud)
     //  -0.5497475543272136, 0.5199167453092753, 0.6538074674231383;
     //  -0.4796749515419679, 0.4443000631068781, -0.7566435057452321]
     //[-0.1135204299158313; -0.03643457180122128; 0.858676674917458]
-
+    /*
     m(0,0) = -0.6838783279023093;
     m(1,0) = -0.7295779820349809;
     m(2,0) = 0.005138166531651278;
@@ -250,6 +263,19 @@ void transformCloud0(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud)
     m(0,2) = -0.4796749515419679;
     m(1,2) = 0.4443000631068781;
     m(2,2) = -0.7566435057452321;
+    */
+
+    m(0,0) = -0.70710678118;
+    m(1,0) = 0.70710678118;
+    m(2,0) = 0.0f;
+
+    m(0,1) = 0.5;
+    m(1,1) = 0.5;
+    m(2,1) = -0.70710678118;
+
+    m(0,2) = 0.5;
+    m(1,2) = 0.5;
+    m(2,2) = -0.70710678118;
 
     /// R
     transformMatrix(0,0) = m(0,0);
@@ -278,7 +304,7 @@ void transformCloud0(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud)
     transformMatrix(3,3) = 1.0f;
 
     pcl::transformPointCloud(*cloud, *cloud, transformMatrix);
-
+/*
     /// R
     transformMatrix(0,0) = 1;
     transformMatrix(0,1) = 0;
@@ -303,7 +329,7 @@ void transformCloud0(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud)
     transformMatrix(3,2) = 0.0f;
     transformMatrix(3,3) = 1.0f;
 
-    pcl::transformPointCloud(*cloud, *cloud, transformMatrix);
+    pcl::transformPointCloud(*cloud, *cloud, transformMatrix);*/
 }
 
 void elaborateCloud(const pcl::PointCloud<pcl::PointXYZ>::Ptr &src, pcl::PointCloud<pcl::PointXYZ>::Ptr &dst)
@@ -447,8 +473,8 @@ int main ()
         c0 = cg.getCloud0();
         c1 = cg.getCloud1();
 #endif
-        //elaborateCloud(c0, e0);
-        //elaborateCloud(c1, e1);
+        elaborateCloud(c0, e0);
+        elaborateCloud(c1, e1);
 
         visualizer.updateCloud(c0, VisualizerThread::VIEWPORT::OBJ0);
         visualizer.updateCloud(c1, VisualizerThread::VIEWPORT::OBJ1);
@@ -456,7 +482,7 @@ int main ()
         pcl::PointCloud<pcl::PointXYZ>::Ptr
                 registered (new pcl::PointCloud<pcl::PointXYZ>);
 
-#ifdef GRAB_
+//#ifdef GRAB_
         if (e0->points.size() > 1 && e1->points.size() > 1)
         {
             //PCL_INFO("3 - registration");
@@ -469,7 +495,7 @@ int main ()
             *registered = *e0;
             *registered += *e1;
         }
-#endif
+//#endif
         visualizer.updateCloud(registered, VisualizerThread::VIEWPORT::COMPLETE);
 
         BoundingBox bb;
