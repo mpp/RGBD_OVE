@@ -29,6 +29,12 @@ public:
 
     Eigen::Matrix4f getTransformMatrix(const int id);
 
+    void loadCloud0(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud);
+    void loadCloud1(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud);
+    void loadCloud2(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud);
+    void loadCloud3(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud);
+
+
 private slots:
     void on_exitAction_triggered();
 
@@ -72,6 +78,8 @@ private slots:
 
     void on_zRDecButton_clicked();
 
+    void on_computeBBButton_clicked();
+
     void on_translationStepInput_textChanged(const QString &arg1);
 
     void on_rotationStepInput_textChanged(const QString &arg1);
@@ -84,6 +92,8 @@ private:
     void updateCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloudToEdit);
 
     void updateTransform(boost::shared_ptr<Eigen::Matrix4f> &transformMatrix);
+
+    void loadCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud, int id);
 
 private:
     Ui::Pclwindow *ui;

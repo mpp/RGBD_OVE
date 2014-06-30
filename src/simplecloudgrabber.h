@@ -12,6 +12,9 @@ class SimpleCloudGrabber
 {
 public:
     SimpleCloudGrabber();
+    SimpleCloudGrabber(const std::string interfaceURL);
+
+    ~SimpleCloudGrabber();
 
     void operator()();
 
@@ -19,11 +22,13 @@ public:
 
     void stopGrabber() {(*grab_stop_) = true;}
 
+    bool isCloud() {return *is_cloud_;}
 
 private:
     void cloudCallback (const pcl::PointCloud<pcl::PointXYZ>::ConstPtr &cloud);
 
-    void copyCloud (const pcl::PointCloud<pcl::PointXYZ>::ConstPtr &source, pcl::PointCloud<pcl::PointXYZ>::Ptr &dest);
+    void copyCloud (const pcl::PointCloud<pcl::PointXYZ>::ConstPtr &source,
+                    pcl::PointCloud<pcl::PointXYZ>::Ptr &dest);
 
 private:
     std::shared_ptr<std::mutex>
@@ -37,6 +42,9 @@ private:
 
     bool
         * grab_stop_;
+
+    bool
+        * is_cloud_;
 
     bool
         file_;

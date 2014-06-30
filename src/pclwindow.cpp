@@ -43,6 +43,109 @@ Pclwindow::~Pclwindow()
     delete ui;
 }
 
+void Pclwindow::loadCloud0(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud)
+{
+    loadCloud(cloud, 0);
+}
+
+void Pclwindow::loadCloud1(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud)
+{
+    loadCloud(cloud, 1);
+}
+
+void Pclwindow::loadCloud2(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud)
+{
+    loadCloud(cloud, 2);
+}
+
+void Pclwindow::loadCloud3(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud)
+{
+    loadCloud(cloud, 3);
+}
+
+void Pclwindow::loadCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud, int id)
+{
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloudToLoad;
+
+    std::string cloudName = "";
+    int r,g,b;
+    switch (id) {
+        case 0:
+            cloudToLoad = c_0_;
+            ui->cloud0Radio->setEnabled(true);
+            ui->cloud0Radio->setChecked(true);
+            cloudName = "cloud0";
+            r = 255; g = 100; b = 255;
+            break;
+        case 1:
+            cloudToLoad = c_1_;
+            ui->cloud1Radio->setEnabled(true);
+            ui->cloud1Radio->setChecked(true);
+            cloudName = "cloud1";
+            r = 100; g = 100; b = 255;
+            break;
+        case 2:
+            cloudToLoad = c_2_;
+            ui->cloud2Radio->setEnabled(true);
+            ui->cloud2Radio->setChecked(true);
+            cloudName = "cloud2";
+            r = 255; g = 100; b = 100;
+            break;
+        case 3:
+        default:
+            cloudToLoad = c_3_;
+            ui->cloud3Radio->setEnabled(true);
+            ui->cloud3Radio->setChecked(true);
+            cloudName = "cloud3";
+            r = 100; g = 255; b = 100;
+            break;
+    }
+
+    cloudToLoad = cloud;
+
+    enableButtons();
+
+    if (cloudToLoad->size() > 0)
+    {
+        pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> single_color(cloudToLoad, r, g, b);
+        pviz.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, cloudName);
+        pviz.addPointCloud<pcl::PointXYZ>(cloudToLoad, single_color, cloudName);
+    }
+}
+
+void Pclwindow::on_computeBBButton_clicked()
+{
+    pcl::PointCloud<pcl::PointXYZ>::Ptr global(new pcl::PointCloud<pcl::PointXYZ>());
+    if (c_0_)
+        (*global) += (*c_0_);
+    if (c_1_)
+        (*global) += (*c_1_);
+    if (c_2_)
+        (*global) += (*c_2_);
+    if (c_3_)
+        (*global) += (*c_3_);
+
+    if (global->points.size() <= 0)
+    {
+        return;
+    }
+
+    BoundingBox bb;
+
+    clinter::computeBB(global, bb);
+
+    pviz.removeShape("bb");
+    pviz.addCube(bb.min_pt.x, bb.max_pt.x,
+                 bb.min_pt.y, bb.max_pt.y,
+                 bb.min_pt.z, bb.max_pt.z,
+                 1.0,1.0,1.0,
+                 "bb");
+
+    std::cout << "(x,y,z): (" << bb.max_pt.x - bb.min_pt.x
+              <<  ", " << bb.max_pt.y - bb.min_pt.y
+              <<  ", " << bb.max_pt.z - bb.min_pt.z << ")" << std::endl;
+}
+
 void Pclwindow::on_exitAction_triggered()
 {
     this->close();
@@ -67,6 +170,8 @@ void Pclwindow::enableButtons()
 
     ui->translationStepInput->setEnabled(true);
     ui->rotationStepInput->setEnabled(true);
+
+    ui->computeBBButton->setEnabled(true);
 }
 
 void Pclwindow::on_openFile0Action_triggered()

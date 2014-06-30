@@ -8,19 +8,6 @@
 
 #include "cloudinteraction.h"
 
-typedef struct BoundingBox_
-{
-    pcl::PointXYZ
-        min_pt,
-        max_pt;
-
-    Eigen::Quaternionf
-        qfinal;
-    Eigen::Vector3f
-        tfinal;
-
-} BoundingBox;
-
 class VisualizerThread
 {
 public:

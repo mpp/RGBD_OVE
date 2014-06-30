@@ -8,8 +8,8 @@ ADD_DEFINITIONS(
     -Wno-deprecated
 )
 
-#set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR})
-#find_package( OpenNI2 REQUIRED )
+set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR})
+find_package( OpenNI2 REQUIRED )
 
 find_package(PCL 1.3 REQUIRED COMPONENTS common visualization io filters sample_consensus segmentation registration)
 
@@ -49,6 +49,7 @@ add_executable(
     src/qttest.cpp
     src/pclwindow.cpp
     src/cloudinteraction.cpp
+    src/simplecloudgrabber.cpp
     ${UISrcs} ${MOCSrcs}
 )
 
@@ -67,4 +68,5 @@ target_link_libraries(
 target_link_libraries(
     qttest QVTK ${PCL_LIBRARIES}
     ${OpenCV_LIBRARIES}
+    ${OPENNI2_LIBRARIES}
 )

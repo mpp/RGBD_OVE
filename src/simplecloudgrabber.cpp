@@ -2,10 +2,15 @@
 
 SimpleCloudGrabber::SimpleCloudGrabber()
 {
+    SimpleCloudGrabber("#1");
+}
+
+SimpleCloudGrabber::SimpleCloudGrabber(const std::string interfaceURL)
+{
     std::shared_ptr<std::mutex> tmp(new std::mutex);
     grab_mutex_ = tmp;
 
-    interface_ = new pcl::OpenNIGrabber("#1");
+    interface_ = new pcl::OpenNIGrabber(interfaceURL);
 
     boost::function<void (const pcl::PointCloud<pcl::PointXYZ>::ConstPtr&)> f =
             boost::bind (&SimpleCloudGrabber::cloudCallback, this, _1);
@@ -13,9 +18,17 @@ SimpleCloudGrabber::SimpleCloudGrabber()
     interface_->registerCallback (f);
 
     grab_stop_ = new bool(false);
+    is_cloud_ = new bool(false);
     file_ = false;
 
     cloud_ = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
+}
+
+SimpleCloudGrabber::~SimpleCloudGrabber()
+{
+    delete grab_stop_;
+    delete is_cloud_;
+    delete interface_;
 }
 
 void SimpleCloudGrabber::operator ()()
@@ -46,6 +59,7 @@ void SimpleCloudGrabber::cloudCallback(const pcl::PointCloud<pcl::PointXYZ>::Con
         pcl::io::savePCDFileASCII("cloud_.pcd", *cloud);
         file_ = false;
     }
+    *is_cloud_ = true;
 }
 
 void SimpleCloudGrabber::copyCloud(const pcl::PointCloud<pcl::PointXYZ>::ConstPtr &source,
