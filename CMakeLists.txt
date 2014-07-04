@@ -3,13 +3,13 @@ project(RGBD_OVE)
 
 SET(CMAKE_BUILD_TYPE Debug)
 
-ADD_DEFINITIONS(
-    -std=c++11 # Or -std=c++0x
-    -Wno-deprecated
-)
+#ADD_DEFINITIONS(
+#    -std=c++11 # Or -std=c++0x
+#    -Wno-deprecated
+#)
 
-set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR})
-find_package( OpenNI2 REQUIRED )
+#set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR})
+#find_package( OpenNI2 REQUIRED )
 
 find_package(PCL 1.3 REQUIRED COMPONENTS common visualization io filters sample_consensus segmentation registration)
 
@@ -20,7 +20,7 @@ add_definitions(${PCL_DEFINITIONS})
 FIND_PACKAGE(VTK)
 INCLUDE(${VTK_USE_FILE})
 
-set(QT_QMAKE_EXECUTABLE /usr/bin/qmake-qt4)
+#set(QT_QMAKE_EXECUTABLE /usr/bin/qmake-qt4)
 
 FIND_PACKAGE(Qt4 REQUIRED)
 INCLUDE(${QT_USE_FILE})
@@ -68,5 +68,5 @@ target_link_libraries(
 target_link_libraries(
     qttest QVTK ${PCL_LIBRARIES}
     ${OpenCV_LIBRARIES}
-    ${OPENNI2_LIBRARIES}
+#    ${OPENNI2_LIBRARIES}
 )

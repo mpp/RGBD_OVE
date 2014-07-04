@@ -1,21 +1,37 @@
 #include "simplecloudgrabber.h"
 
-SimpleCloudGrabber::SimpleCloudGrabber()
+/*SimpleCloudGrabber::SimpleCloudGrabber()
 {
     SimpleCloudGrabber("#1");
 }
 
 SimpleCloudGrabber::SimpleCloudGrabber(const std::string interfaceURL)
 {
-    std::shared_ptr<std::mutex> tmp(new std::mutex);
-    grab_mutex_ = tmp;
-
-    interface_ = new pcl::OpenNIGrabber(interfaceURL);
+	grab_mutex_ = new boost::mutex();
 
     boost::function<void (const pcl::PointCloud<pcl::PointXYZ>::ConstPtr&)> f =
             boost::bind (&SimpleCloudGrabber::cloudCallback, this, _1);
 
-    interface_->registerCallback (f);
+	interface_ = new pcl::io::OpenNI2Grabber(interfaceURL);
+
+    boost::signals2::connection cloud_connection = interface_->registerCallback (f);
+
+    grab_stop_ = new bool(false);
+    is_cloud_ = new bool(false);
+    file_ = false;
+
+    cloud_ = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
+}*/
+
+SimpleCloudGrabber::SimpleCloudGrabber(pcl::io::OpenNI2Grabber * grabber)
+	: interface_(grabber)
+{
+	grab_mutex_ = new boost::mutex();
+
+    boost::function<void (const pcl::PointCloud<pcl::PointXYZ>::ConstPtr&)> f =
+            boost::bind (&SimpleCloudGrabber::cloudCallback, this, _1);
+
+    boost::signals2::connection cloud_connection = interface_->registerCallback (f);
 
     grab_stop_ = new bool(false);
     is_cloud_ = new bool(false);
@@ -28,12 +44,15 @@ SimpleCloudGrabber::~SimpleCloudGrabber()
 {
     delete grab_stop_;
     delete is_cloud_;
-    delete interface_;
+	delete grab_mutex_;
 }
 
 void SimpleCloudGrabber::operator ()()
 {
-    interface_->start();
+	std::cout << "grabber start...";
+	interface_->start();
+
+	std::cout << " ok" << std::endl;
 
     while (!(*grab_stop_))
     {
@@ -44,15 +63,19 @@ void SimpleCloudGrabber::operator ()()
 
     if (interface_->isRunning())
         interface_->stop ();
-
+		
     return;
 }
 
 void SimpleCloudGrabber::cloudCallback(const pcl::PointCloud<pcl::PointXYZ>::ConstPtr &cloud)
 {
-    grab_mutex_->lock();
+	std::cout << "new cloud" << std::endl;
+	if (*is_cloud_)
+		return;
+	std::cout << "new cloud" << std::endl;
+    
+    boost::lock_guard<boost::mutex> guard(*grab_mutex_);
     copyCloud(cloud, cloud_);
-    grab_mutex_->unlock();
 
     if (file_)
     {
@@ -66,8 +89,9 @@ void SimpleCloudGrabber::copyCloud(const pcl::PointCloud<pcl::PointXYZ>::ConstPt
                               pcl::PointCloud<pcl::PointXYZ>::Ptr &dest)
 {
     dest->clear();
-    for (pcl::PointXYZ pt : source->points)
+	for (int k = 0; k < source->points.size(); k++)
     {
+		pcl::PointXYZ pt = source->points[k];
         dest->points.push_back(pt);
     }
     dest->width = dest->points.size();
@@ -76,9 +100,8 @@ void SimpleCloudGrabber::copyCloud(const pcl::PointCloud<pcl::PointXYZ>::ConstPt
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr SimpleCloudGrabber::getCloud()
 {
-    grab_mutex_->lock();
+    boost::lock_guard<boost::mutex> guard(*grab_mutex_);
     pcl::PointCloud<pcl::PointXYZ>::Ptr tmp = cloud_;
-    grab_mutex_->unlock();
     return tmp;
 }
 

@@ -95,6 +95,9 @@ private:
 
     void loadCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud, int id);
 
+	void copyCloud(const pcl::PointCloud<pcl::PointXYZ>::ConstPtr &source,
+                              pcl::PointCloud<pcl::PointXYZ>::Ptr &dest);
+
 private:
     Ui::Pclwindow *ui;
 
@@ -104,7 +107,7 @@ private:
         c_2_,
         c_3_;
 
-    boost::shared_ptr<Eigen::Matrix4f>
+    Eigen::Matrix4f
         t_0_,
         t_1_,
         t_2_,

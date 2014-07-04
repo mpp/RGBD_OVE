@@ -1,7 +1,9 @@
 #include <QApplication>
 
 #include <opencv2/opencv.hpp>
-#include <openni2/OpenNI.h>
+//#include <openni2/OpenNI.h>
+
+#include <pcl\io\openni2_grabber.h>
 
 #include <pcl/common/common_headers.h>
 
@@ -67,38 +69,101 @@ Eigen::Matrix4f cvToEigen4f(const cv::Mat cvMat)
     return matrix;
 }
 
+void copyCloud(const pcl::PointCloud<pcl::PointXYZ>::ConstPtr &source,
+               pcl::PointCloud<pcl::PointXYZ>::Ptr &dest)
+{
+    dest->clear();
+	for (int k = 0; k < source->points.size(); k++)
+    {
+		pcl::PointXYZ pt = source->points[k];
+        dest->points.push_back(pt);
+    }
+    dest->width = dest->points.size();
+    dest->height = 1;
+}
+
+pcl::PointCloud<pcl::PointXYZ>::Ptr gcloud(new pcl::PointCloud<pcl::PointXYZ>());
+
+void cloudcb(const pcl::PointCloud<pcl::PointXYZ>::ConstPtr &cloud)
+{
+	std::cout << cloud->points.size() << std::endl;
+	copyCloud(cloud, gcloud);
+}
+
 int main(int argc, char** argv)
 {
     //////
     /// STEP 1 ACQUISIZIONE DALLE 4 TELECAMERE
     // Mi servono coppie del tipo <URI, Cloud>
-    openni::Status rc = openni::STATUS_OK;
 
-    rc = openni::OpenNI::initialize();    // Initialize OpenNI
+	std::vector< std::pair<std::string, std::string> > connectedDevices;
 
-    openni::Array<openni::DeviceInfo> deviceList;
+	boost::shared_ptr<pcl::io::openni2::OpenNI2DeviceManager> 
+		deviceManager = pcl::io::openni2::OpenNI2DeviceManager::getInstance ();
+	
+	/// DEBUG CODE TO GET CAMERAS URIs
+	/*boost::shared_ptr<pcl::io::openni2::OpenNI2Device> 
+		device = deviceManager->getDeviceByIndex(0);
+	 
+	std::cout << device->getUri() << std::endl;
+	std::string tp = "test.yml";
+    cv::FileStorage tmp(tp, cv::FileStorage::WRITE);
+	tmp << "URICamera" << device->getUri();
+    tmp.release();
 
-    openni::OpenNI::enumerateDevices(&deviceList);
-    std::cout << deviceList.getSize() << std::endl;
+	char c;
+	cin >> c;
+	return 0;*/
+
+	if (deviceManager->getNumOfConnectedDevices () >= 4)
+	{
+		boost::shared_ptr<pcl::io::openni2::OpenNI2Device> 
+			device = deviceManager->getDeviceByIndex(0);
+		connectedDevices.push_back(std::make_pair<std::string, std::string>("#1", device->getUri()));
+		device = deviceManager->getDeviceByIndex(1);
+		connectedDevices.push_back(std::make_pair<std::string, std::string>("#2", device->getUri()));
+		device = deviceManager->getDeviceByIndex(2);
+		connectedDevices.push_back(std::make_pair<std::string, std::string>("#3", device->getUri()));
+		device = deviceManager->getDeviceByIndex(3);
+		connectedDevices.push_back(std::make_pair<std::string, std::string>("#4", device->getUri()));
+	}
 
     std::vector< pcl::PointCloud<pcl::PointXYZ>::Ptr >
         cloudsVector;
 
     // Take a cloud for each sensor
-    for (int i = 0; i < deviceList.getSize(); i++)
+    for (int i = 0; i < connectedDevices.size(); i++)
     {
-        std::string currentURI = deviceList[i].getUri();
-        std::cout << currentURI << std::endl;
+		std::string currentURI = connectedDevices[i].first;
+		std::cout << currentURI << " - " << connectedDevices[i].second << std::endl;
 
-        SimpleCloudGrabber grabber(currentURI);
+		pcl::io::OpenNI2Grabber g(currentURI);
+		
+		boost::function<void (const pcl::PointCloud<pcl::PointXYZ>::ConstPtr&)> f =
+            boost::bind (&cloudcb, _1);
 
-        while (!grabber.isCloud())
-        {
-            /// TODO sleep!!
-            std::cout << "wait for a cloud from the grabber: " << i << std::endl;
-        }
-        pcl::PointCloud<pcl::PointXYZ>::Ptr tmpCloud = grabber.getCloud();
+		boost::signals2::connection cloud_connection = g.registerCallback (f);
 
+		g.start();
+
+        //SimpleCloudGrabber grabber(&g);
+		//boost::thread grabberThread(grabber);
+
+		while(gcloud->points.size() <= 0)
+		{
+		}
+		g.stop();
+		std::cout << "OK, get the cloud!" << std::endl;
+        //pcl::PointCloud<pcl::PointXYZ>::Ptr tmpCloud = grabber.getCloud();
+		
+		//grabber.stopGrabber();
+		//grabberThread.join();
+
+		pcl::PointCloud<pcl::PointXYZ>::Ptr tmpCloud(new pcl::PointCloud<pcl::PointXYZ>());
+		copyCloud(gcloud, tmpCloud);
+
+		gcloud->clear();
+		
         cloudsVector.push_back(tmpCloud);
     }
 
@@ -110,8 +175,15 @@ int main(int argc, char** argv)
     std::cout << "Loading config data: " << std::endl;
 
     /// TODO: controllare che ci sia il file
-    cv::FileStorage config("/home/mpp/PANOTEC/RGBD_ObjectVolumeEstimator/RGBD_OVE/config/config.yml",
+	std::string confPath = "C:/Users/Administrator/Desktop/PCL TEST/RGBD_OVE/config/config.yml";
+    cv::FileStorage config(confPath,
                            cv::FileStorage::READ);
+
+	if (!config.isOpened())
+	{
+		std::cout << "Cannot open config file" << confPath << std::endl;
+		return -1;
+	}
 
     // Load URIs
     std::string
@@ -149,16 +221,55 @@ int main(int argc, char** argv)
 
     /// TODO: Match URIs, transformations and clouds
     // Riordinare il vettore di cloud
+	std::vector< pcl::PointCloud<pcl::PointXYZ>::Ptr >  sortedClouds;
+	for (int k = 0; k < connectedDevices.size(); k++)
+	{
+		if (URI0.compare(connectedDevices[k].second) == 0)
+		{
+			sortedClouds.push_back(cloudsVector[k]);
+			break;
+		}
+	}
+	for (int k = 0; k < connectedDevices.size(); k++)
+	{
+		if (URI1.compare(connectedDevices[k].second) == 0)
+		{
+			sortedClouds.push_back(cloudsVector[k]);
+			break;
+		}
+	}
+	for (int k = 0; k < connectedDevices.size(); k++)
+	{
+		if (URI2.compare(connectedDevices[k].second) == 0)
+		{
+			sortedClouds.push_back(cloudsVector[k]);
+			break;
+		}
+	}
+	for (int k = 0; k < connectedDevices.size(); k++)
+	{
+		if (URI3.compare(connectedDevices[k].second) == 0)
+		{
+			sortedClouds.push_back(cloudsVector[k]);
+			break;
+		}
+	}
+
+	std::cout << "Are there 4 clouds? " << sortedClouds.size() << std::endl;
+
+	if (sortedClouds.size() != 4)
+		return 0;
 
     //////
     /// STEP 3 ELABORAZIONE CLOUD E APPLICAZIONE DELLE MATRICI
     // Devo applicare le operazioni di segmentazione, ...  e trasformare le matrici
 
     std::vector< pcl::PointCloud<pcl::PointXYZ>::Ptr > elaboratedCloudsVector;
-    for (int k = 0; k < cloudsVector.size(); k++)
+    for (int k = 0; k < sortedClouds.size(); k++)
     {
+		std::cout << "Loading cloud " << k << "...";
         pcl::PointCloud<pcl::PointXYZ>::Ptr tmp;
-        clinter::elaborateCloud(cloudsVector[k], tmp);
+        clinter::elaborateCloud(sortedClouds[k], tmp);
 
         Eigen::Matrix4f transform;
 
@@ -181,6 +292,8 @@ int main(int argc, char** argv)
         pcl::transformPointCloud(*tmp, *tmp, transform);
 
         elaboratedCloudsVector.push_back(tmp);
+
+		std::cout << "ok" << std::endl;
     }
 
     //////
@@ -206,7 +319,14 @@ int main(int argc, char** argv)
     // Devo salvare i dati in un nuovo file YAML con le 4 coppie <URI, Matrice>
 
     /// TODO: Controllare che la destinazione sia scrivibile
-    cv::FileStorage fs("new_config.yml", cv::FileStorage::WRITE);
+	std::string outPath = "new_config.yml";
+    cv::FileStorage fs(outPath, cv::FileStorage::WRITE);
+
+	if (!fs.isOpened())
+	{
+		std::cerr << "Cannot open output file: " << outPath << std::endl;
+		return -1;
+	}
 
     fs << "URICamera0" << URI0;
     fs << "URICamera1" << URI1;

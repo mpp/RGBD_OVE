@@ -264,6 +264,8 @@ void elaborateCloud(const pcl::PointCloud<pcl::PointXYZ>::Ptr &src, pcl::PointCl
     int currentInlier = 0;
     for (int i = 0; i < noOutliersCloud->points.size(); i++)
     {
+		if (currentInlier >= inliers->indices.size())
+			break;
         if (inliers->indices[currentInlier] != i)
         {
             segmentedCloud->points.push_back(noOutliersCloud->points[i]);

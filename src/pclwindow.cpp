@@ -17,25 +17,31 @@ Pclwindow::Pclwindow(QWidget *parent) :
     pviz.getInteractorStyle ()->setKeyboardModifier (pcl::visualization::INTERACTOR_KB_MOD_SHIFT);
 
     pviz.setBackgroundColor(0, 0, 0.1);
-    pviz.addCoordinateSystem (1.0);
+	pviz.addCoordinateSystem (1.0, 0);
 
     ui->widget->show();
     ui->widget->setDisabled(true);
 
-    ui->translationStepInput->setText(std::to_string(0.001).c_str());
-    ui->rotationStepInput->setText(std::to_string(0.01).c_str());
+    ui->translationStepInput->setText("0.001");
+    ui->rotationStepInput->setText("0.01");
 
     translation_step_ = 0.001;
     rotation_step_ = 0.01;
 
     cloud_to_edit_ = 0;
+	
 
     Eigen::Matrix4f mat = clinter::identity();
 
-    t_0_ = boost::make_shared<Eigen::Matrix4f>(mat);
-    t_1_ = boost::make_shared<Eigen::Matrix4f>(mat);
-    t_2_ = boost::make_shared<Eigen::Matrix4f>(mat);
-    t_3_ = boost::make_shared<Eigen::Matrix4f>(mat);
+    /*t_0_ = boost::make_shared<Eigen::Matrix4f>(Eigen::Matrix4f());
+    t_1_ = boost::make_shared<Eigen::Matrix4f>(Eigen::Matrix4f());
+    t_2_ = boost::make_shared<Eigen::Matrix4f>(Eigen::Matrix4f());
+    t_3_ = boost::make_shared<Eigen::Matrix4f>(Eigen::Matrix4f());*/
+
+	t_0_ = mat;
+	t_1_ = mat;
+	t_2_ = mat;
+	t_3_ = mat;
 }
 
 Pclwindow::~Pclwindow()
@@ -63,6 +69,19 @@ void Pclwindow::loadCloud3(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud)
     loadCloud(cloud, 3);
 }
 
+void Pclwindow::copyCloud(const pcl::PointCloud<pcl::PointXYZ>::ConstPtr &source,
+                              pcl::PointCloud<pcl::PointXYZ>::Ptr &dest)
+{
+    dest->clear();
+	for (int k = 0; k < source->points.size(); k++)
+    {
+		pcl::PointXYZ pt = source->points[k];
+        dest->points.push_back(pt);
+    }
+    dest->width = dest->points.size();
+    dest->height = 1;
+}
+
 void Pclwindow::loadCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud, int id)
 {
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloudToLoad;
@@ -71,21 +90,30 @@ void Pclwindow::loadCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud, int id)
     int r,g,b;
     switch (id) {
         case 0:
+			c_0_ = pcl::PointCloud<pcl::PointXYZ>::Ptr (new pcl::PointCloud<pcl::PointXYZ>());
+			copyCloud(cloud, c_0_);
             cloudToLoad = c_0_;
+			ui->widget->setEnabled(true);
             ui->cloud0Radio->setEnabled(true);
             ui->cloud0Radio->setChecked(true);
             cloudName = "cloud0";
             r = 255; g = 100; b = 255;
             break;
         case 1:
+			c_1_ = pcl::PointCloud<pcl::PointXYZ>::Ptr (new pcl::PointCloud<pcl::PointXYZ>());
+			copyCloud(cloud, c_1_);
             cloudToLoad = c_1_;
+			ui->widget->setEnabled(true);
             ui->cloud1Radio->setEnabled(true);
             ui->cloud1Radio->setChecked(true);
             cloudName = "cloud1";
             r = 100; g = 100; b = 255;
             break;
         case 2:
+			c_2_ = pcl::PointCloud<pcl::PointXYZ>::Ptr (new pcl::PointCloud<pcl::PointXYZ>());
+			copyCloud(cloud, c_2_);
             cloudToLoad = c_2_;
+			ui->widget->setEnabled(true);
             ui->cloud2Radio->setEnabled(true);
             ui->cloud2Radio->setChecked(true);
             cloudName = "cloud2";
@@ -93,7 +121,10 @@ void Pclwindow::loadCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud, int id)
             break;
         case 3:
         default:
+			c_3_ = pcl::PointCloud<pcl::PointXYZ>::Ptr (new pcl::PointCloud<pcl::PointXYZ>());
+			copyCloud(cloud, c_3_);
             cloudToLoad = c_3_;
+			ui->widget->setEnabled(true);
             ui->cloud3Radio->setEnabled(true);
             ui->cloud3Radio->setChecked(true);
             cloudName = "cloud3";
@@ -108,8 +139,8 @@ void Pclwindow::loadCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud, int id)
     if (cloudToLoad->size() > 0)
     {
         pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> single_color(cloudToLoad, r, g, b);
-        pviz.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, cloudName);
         pviz.addPointCloud<pcl::PointXYZ>(cloudToLoad, single_color, cloudName);
+        pviz.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, cloudName);
     }
 }
 
@@ -436,26 +467,28 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr &Pclwindow::cloudToEdit()
         return c_2_;
     if (3 == cloud_to_edit_)
         return c_3_;
+	return c_0_;
 }
 
 void Pclwindow::updateTransform(boost::shared_ptr<Eigen::Matrix4f> &transformMatrix)
 {
     // Take the right transform matrix to update
-    boost::shared_ptr<Eigen::Matrix4f> toUpdate;
+    //boost::shared_ptr<Eigen::Matrix4f> toUpdate;
+	Eigen::Matrix4f * toUpdate;
 
     switch (cloud_to_edit_) {
         case 0:
-            toUpdate = t_0_;
+            toUpdate = &t_0_;
             break;
         case 1:
-            toUpdate = t_1_;
+            toUpdate = &t_1_;
             break;
         case 2:
-            toUpdate = t_2_;
+            toUpdate = &t_2_;
             break;
         case 3:
         default:
-            toUpdate = t_3_;
+            toUpdate = &t_3_;
             break;
     }
 
@@ -509,17 +542,17 @@ Eigen::Matrix4f Pclwindow::getTransformMatrix(const int id)
 {
     switch (id) {
         case 0:
-            return *t_0_;
+            return t_0_;
             break;
         case 1:
-            return *t_1_;
+            return t_1_;
             break;
         case 2:
-            return *t_2_;
+            return t_2_;
             break;
         case 3:
         default:
-            return *t_3_;
+            return t_3_;
             break;
     }
 }
